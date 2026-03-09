@@ -1,0 +1,56 @@
+{
+  "mcpServers": {
+    "ProxmoxMCP": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "--name", "proxmox-mcp-session",
+        "--network", "host",
+        "grizzly/proxmox-mcp:latest"
+      ]
+    },
+    "HostingerSSH": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "--name", "hostinger-ssh-mcp-session",
+        "-e", "SSH_HOST=187.124.28.147",
+        "-e", "SSH_PORT=22",
+        "-e", "SSH_USER=root",
+        "-e", "SSH_PASSWORD=Valhalla55730-",
+        "-e", "LOG_LEVEL=INFO",
+        "grizzly/hostinger-ssh-mcp:latest"
+      ]
+    },
+    "ConvexMCP": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "--name", "convex-mcp-session",
+        "-v", "${HOME}/.config/convex:/root/.config/convex:ro",
+        "grizzly/convex-mcp:latest"
+      ]
+    },
+    "macOS_gui": {
+      "command": "/Users/grizzmed/ProxmoxMCP-Plus/macOS_gui/venv/bin/python3",
+      "args": ["/Users/grizzmed/ProxmoxMCP-Plus/macOS_gui/server.py"],
+      "env": {}
+    },
+    "mcp_remote_macos": {
+      "command": "/Users/grizzmed/ProxmoxMCP-Plus/mcp-remote-macos-use/venv/bin/python3",
+      "args": ["-m", "src.mcp_remote_macos_use.server"],
+      "cwd": "/Users/grizzmed/ProxmoxMCP-Plus/mcp-remote-macos-use",
+      "env": {
+        "MACOS_PASSWORD": "${MACOS_PASSWORD}"
+      }
+    },
+    "HomeAssistant": {
+      "command": "npx",
+      "args": ["-y", "hass-mcp"],
+      "env": {
+        "HA_URL": "http://192.168.7.194:8123",
+        "HA_TOKEN": "PLACEHOLDER_REPLACE_WITH_TOKEN"
+      }
+    }
+  }
+}
