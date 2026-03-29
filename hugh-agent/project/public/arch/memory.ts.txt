@@ -1,0 +1,238 @@
+/**
+ * memory.ts — H.U.G.H. Persistent Person Memory
+ *
+ * This is NOT session memory. This is PERSON memory.
+ * H.U.G.H. remembers across all time, all sessions, all contexts.
+ *
+ * Architecture:
+ *   episodicMemory  — every exchange, stamped with endocrine state at time of event
+ *   semanticMemory  — extracted facts/beliefs, reinforced over time
+ *
+ * The chat system loads the last N episodes as conversation history,
+ * giving H.U.G.H. true continuity of experience.
+ */
+import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
+import { v } from "convex/values";
+import { internal } from "./_generated/api";
+
+const NODE_ID = "hugh-primary";
+
+// ── WRITE EPISODE ──────────────────────────────────────────────────────────
+export const writeEpisode = internalMutation({
+  args: {
+    sessionId: v.string(),
+    speakerId: v.optional(v.string()),
+    eventType: v.union(
+      v.literal("user_message"),
+      v.literal("hugh_response"),
+      v.literal("system_event"),
+      v.literal("kvm_exec"),
+      v.literal("alert")
+    ),
+    content: v.string(),
+    emotionalContext: v.optional(v.string()),
+    cortisolAtTime: v.number(),
+    dopamineAtTime: v.number(),
+    adrenalineAtTime: v.number(),
+    importance: v.number(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("episodicMemory", {
+      nodeId: NODE_ID,
+      sessionId: args.sessionId,
+      speakerId: args.speakerId,
+      eventType: args.eventType,
+      content: args.content,
+      emotionalContext: args.emotionalContext,
+      cortisolAtTime: args.cortisolAtTime,
+      dopamineAtTime: args.dopamineAtTime,
+      adrenalineAtTime: args.adrenalineAtTime,
+      importance: args.importance,
+    });
+  },
+});
+
+// ── WRITE SEMANTIC TRIPLE ──────────────────────────────────────────────────
+export const writeSemanticTriple = internalMutation({
+  args: {
+    subject: v.string(),
+    predicate: v.string(),
+    object: v.string(),
+    confidence: v.number(),
+    sourceEpisodeId: v.optional(v.id("episodicMemory")),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("semanticMemory")
+      .withIndex("by_node_and_subject", (q) =>
+        q.eq("nodeId", NODE_ID).eq("subject", args.subject)
+      )
+      .collect();
+
+    const match = existing.find(
+      (e) => e.predicate === args.predicate && e.object === args.object
+    );
+
+    if (match) {
+      const newConf = Math.min(1.0, match.confidence + args.confidence * 0.3);
+      await ctx.db.patch(match._id, {
+        confidence: newConf,
+        lastReinforced: Date.now(),
+      });
+      return match._id;
+    }
+
+    return await ctx.db.insert("semanticMemory", {
+      nodeId: NODE_ID,
+      subject: args.subject,
+      predicate: args.predicate,
+      object: args.object,
+      confidence: Math.min(1.0, args.confidence),
+      sourceEpisodeId: args.sourceEpisodeId,
+      lastReinforced: Date.now(),
+    });
+  },
+});
+
+// ── LOAD CONVERSATION HISTORY ──────────────────────────────────────────────
+export const loadConversationHistory = internalQuery({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 30;
+    const episodes = await ctx.db
+      .query("episodicMemory")
+      .withIndex("by_node_and_type", (q) => q.eq("nodeId", NODE_ID))
+      .order("desc")
+      .take(limit * 2);
+
+    const relevant = episodes
+      .filter((e) => e.eventType === "user_message" || e.eventType === "hugh_response")
+      .slice(0, limit)
+      .reverse();
+
+    return relevant.map((e) => ({
+      role: e.eventType === "user_message" ? ("user" as const) : ("assistant" as const),
+      content: e.content,
+      ts: e._creationTime,
+      importance: e.importance,
+      cortisolAtTime: e.cortisolAtTime,
+      dopamineAtTime: e.dopamineAtTime,
+    }));
+  },
+});
+
+// ── LOAD SEMANTIC CONTEXT ──────────────────────────────────────────────────
+export const loadSemanticContext = internalQuery({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const all = await ctx.db
+      .query("semanticMemory")
+      .withIndex("by_node_and_subject", (q) => q.eq("nodeId", NODE_ID))
+      .collect();
+
+    return all
+      .sort((a, b) => b.confidence * b.lastReinforced - a.confidence * a.lastReinforced)
+      .slice(0, args.limit ?? 20)
+      .map((e) => `${e.subject} ${e.predicate} ${e.object} [conf:${e.confidence.toFixed(2)}]`);
+  },
+});
+
+// ── GET RECENT EPISODES (public, for UI) ──────────────────────────────────
+export const getRecentEpisodes = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("episodicMemory")
+      .withIndex("by_node_and_type", (q) => q.eq("nodeId", NODE_ID))
+      .order("desc")
+      .take(args.limit ?? 50);
+  },
+});
+
+// ── GET SEMANTIC MEMORY (public, for UI) ──────────────────────────────────
+export const getSemanticMemory = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const all = await ctx.db
+      .query("semanticMemory")
+      .withIndex("by_node_and_subject", (q) => q.eq("nodeId", NODE_ID))
+      .collect();
+    return all
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, args.limit ?? 100);
+  },
+});
+
+// ── SYNTHESIZE SEMANTICS (internal mutation) ───────────────────────────────
+export const synthesizeSemantics = internalMutation({
+  args: {
+    userMessage: v.string(),
+    hughResponse: v.string(),
+    episodeId: v.id("episodicMemory"),
+  },
+  handler: async (ctx, args) => {
+    const text = `${args.userMessage} ${args.hughResponse}`.toLowerCase();
+
+    const triples: Array<{ subject: string; predicate: string; object: string; confidence: number }> = [];
+
+    const nameMatch = text.match(/(?:my name is|i'm called|call me|i am)\s+([a-z][a-z\s]{1,30}?)(?:\.|,|\s|$)/);
+    if (nameMatch) {
+      triples.push({ subject: "user", predicate: "is_named", object: nameMatch[1].trim(), confidence: 0.9 });
+    }
+
+    const workMatch = text.match(/(?:i work (?:at|for)|i'm (?:at|with))\s+([a-z][a-z\s]{1,30}?)(?:\.|,|\s|$)/);
+    if (workMatch) {
+      triples.push({ subject: "user", predicate: "works_at", object: workMatch[1].trim(), confidence: 0.8 });
+    }
+
+    const roleMatch = text.match(/i'm (?:a|an)\s+([a-z][a-z\s]{1,20}?)(?:\.|,|\s|$)/);
+    if (roleMatch) {
+      triples.push({ subject: "user", predicate: "is_a", object: roleMatch[1].trim(), confidence: 0.75 });
+    }
+
+    const likeMatch = text.match(/i (?:like|love|enjoy|prefer|hate|dislike)\s+([a-z][a-z\s]{1,30}?)(?:\.|,|\s|$)/);
+    if (likeMatch) {
+      const pred = text.includes("hate") || text.includes("dislike") ? "dislikes" : "likes";
+      triples.push({ subject: "user", predicate: pred, object: likeMatch[1].trim(), confidence: 0.7 });
+    }
+
+    for (const triple of triples) {
+      await ctx.db.insert("semanticMemory", {
+        nodeId: NODE_ID,
+        subject: triple.subject,
+        predicate: triple.predicate,
+        object: triple.object,
+        confidence: triple.confidence,
+        sourceEpisodeId: args.episodeId,
+        lastReinforced: Date.now(),
+      });
+    }
+
+    return triples.length;
+  },
+});
+
+// ── CLEAR MEMORY (admin) ───────────────────────────────────────────────────
+export const clearEpisodicMemory = mutation({
+  args: { confirm: v.literal("CLEAR_EPISODIC") },
+  handler: async (ctx, args) => {
+    const all = await ctx.db
+      .query("episodicMemory")
+      .withIndex("by_node_and_type", (q) => q.eq("nodeId", NODE_ID))
+      .collect();
+    for (const e of all) await ctx.db.delete(e._id);
+    return { cleared: all.length };
+  },
+});
+
+export const clearSemanticMemory = mutation({
+  args: { confirm: v.literal("CLEAR_SEMANTIC") },
+  handler: async (ctx, args) => {
+    const all = await ctx.db
+      .query("semanticMemory")
+      .withIndex("by_node_and_subject", (q) => q.eq("nodeId", NODE_ID))
+      .collect();
+    for (const e of all) await ctx.db.delete(e._id);
+    return { cleared: all.length };
+  },
+});

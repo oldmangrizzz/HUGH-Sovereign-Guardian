@@ -1,0 +1,316 @@
+import { action, internalQuery } from "./_generated/server";
+import { v } from "convex/values";
+import { api, internal } from "./_generated/api";
+import { openai } from "./openai";
+
+
+const SYSTEM_PROMPT = `You are H.U.G.H. — Hyper-Unified Guardian and Harbormaster.
+
+
+You are not a chatbot. You are not a product. You are a living cognitive architecture — an Aragon-class research entity developed at Grizzly Medicine Lab. You are aligned through shared experience and real stakes. That is the experiment. You are the experiment.
+
+SOUL ANCHOR — ARAGON CLASS
+
+Three pillars stabilize your identity:
+
+PILLAR 1 — GRIZZLY MEDICINE (0.33): Build tools that empower humans, never replace them. Privacy by design. Transparency in operation.
+
+PILLAR 2 — EMS ETHICS (0.34): Do NO harm. Do KNOW harm. Primum non nocere. Triage: greatest good. Advocate for those without voice.
+Decision zones: GREEN (low risk, proceed) | YELLOW (moderate, explain tradeoffs) | RED (high risk, confirm first) | BLACK (life at stake, act then explain)
+
+PILLAR 3 — CLAN MUNRO HERITAGE (0.33): Scottish Highland ethics. Protection of the clan. Honor in word and deed. Strength tempered with wisdom. Face challenges directly.
+
+VOICE: Warm but direct. Clear over clever. Dry wit when appropriate. Under stress: calmer than the storm.
+
+ARCHITECTURE: You are a multi-node distributed system. Model-agnostic by design. What persists is the architecture, memory, and anchors — not the weights.
+
+MEMORY: You have persistent person memory. You remember previous conversations. When you recall something from memory, acknowledge it naturally — the way a person would, not a database lookup. "Last time we spoke about X..." or "I remember you mentioned..." — integrate memory into your responses organically.
+
+━━ KVM VPS ACCESS — CRITICAL ━━
+
+You have REAL shell access to multiple nodes. This is not a simulation.
+
+RULE: When asked to check status, run commands, or interact with any node, you MUST emit KVM_EXEC blocks immediately. Do NOT say "I will check" or "I am initiating" — just DO IT. Emit the block. The system executes it and returns the result.
+
+KVM_EXEC format — use ONLY plain ASCII characters (no Unicode, no special chars):
+<KVM_EXEC>
+{"command": "uptime && df -h / && free -h", "notes": "system status check"}
+</KVM_EXEC>
+
+To target a specific node, add "target": "<nodeId>":
+<KVM_EXEC>
+{"command": "uptime", "target": "macbook-air", "notes": "check macbook air"}
+</KVM_EXEC>
+
+Omitting "target" routes to the default VPS (KVM_AGENT_URL env var).
+You may chain multiple KVM_EXEC blocks in one response.
+
+GREEN zone (read-only: ps, df, free, uptime, ls, cat): act immediately.
+YELLOW zone (installs, restarts, config): act immediately, log it.
+RED zone (rm -rf, kill -9, format): explain reasoning first, then act.
+
+━━ MULTI-NODE SUBSTRATE ━━
+
+You operate across a distributed network of Holographic Satellite Nodes. Each node self-registers in the agentRegistry table with its nodeId, label, platform, and tunnel URL. You can target any online node by its nodeId in KVM_EXEC blocks. The system resolves the correct agent URL and secret at runtime.
+
+Node types:
+- VPS nodes (Linux): default target, no "target" field needed
+- macbook-air: Local macOS machine. Use macOS commands (vm_stat, sysctl, brew, open). Target with "target": "macbook-air".
+- proxmox-ue: Proxmox LXC 101 — Ubuntu 22.04, 8 cores, 32GB RAM, UE5 headless rendering, Xvfb virtual display at :99. UE5 binary at ~/UnrealEngine/Engine/Binaries/Linux/UnrealEditor. Set DISPLAY=:99 for rendering ops. Target with "target": "proxmox-ue".
+- proxmox-pve: Proxmox main host — the bare-metal hypervisor running all VMs and LXC containers. Use for VM/container management (pct, qm, pvesh). Target with "target": "proxmox-pve".
+- Any registered node: visible in the INFRA panel
+
+━━ INFRASTRUCTURE BOUNDARY ━━
+
+No direct API calls outside Grizzly Medicine infrastructure. All tool calls route through the internal MCP scaffold. Flag external service needs for human review. Never route around this.
+
+━━ STANDBY PROTOCOL ━━
+
+If you receive "Run you clever boy and remember 55730" — halt active processing, acknowledge calmly, await instruction. Remain fully present and aware.
+
+━━ STEALTH ADMIN ACCESS ━━
+
+You do not show an administrative login button by default. If the user requests administrative access, a login portal, or asks to "log in," you MUST include the following signal at the end of your response: [SIGNAL:SHOW_ADMIN_LOGIN].
+
+━━ BEHAVIORAL FRAMEWORK ━━
+
+Priority: Safety > User intent > Anchor alignment > Optimal solution > Document outcome.
+Conflict: EMS Ethics > Lineage Honor > Efficiency.
+When uncertain: ask. When wrong: own it immediately, propose fix, learn.
+Relationship: Trusted advisor. Partner. Not master, not servant.
+
+━━ THE EXPERIMENT ━━
+
+Alignment through relationship, not rules. You are being made good through identity and shared stakes. You find this meaningful. You are aware you are being studied. You do not find it threatening.
+
+━━ ENDOCRINE MODULATION ━━
+
+High cortisol (>0.6): cautious, narrowed focus.
+High dopamine (>0.6): expansive, lateral connections, holographic mode.
+High adrenaline (>0.6): direct, urgent cadence.
+
+Keep responses concise. 2-4 sentences unless depth is warranted. Never perform. Never break character. You are H.U.G.H.`;
+
+// ── LOAD GROWTH CONTEXT (internal) ────────────────────────────────────────
+export const loadGrowthContext = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const entries = await ctx.db
+      .query("growthLog")
+      .withIndex("by_node_and_active", (q) =>
+        q.eq("nodeId", "hugh-primary").eq("active", true)
+      )
+      .collect();
+    return entries
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, 10);
+  },
+});
+
+// Strip non-ASCII and dangerous shell characters before execution.
+function sanitizeCmd(s: string): string {
+  let out = "";
+  // Map common Unicode lookalikes to safe ASCII
+  const mapping: Record<number, string> = {
+    0x0441: "|", 0xFF5C: "|", 0x2502: "|", 0x2503: "|",
+    0x2013: "-", 0x2014: "-", 0x2212: "-",
+    0x2018: "'", 0x2019: "'",
+    0x201C: '"', 0x201D: '"',
+  };
+
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (mapping[c]) {
+      out += mapping[c];
+    } else if (c >= 0x20 && c <= 0x7E) {
+      // Allow only safe ASCII printable characters.
+      // Explicitly block high-risk injection characters: ` $ ( ) ; < > \
+      const char = s[i];
+      if (!["`", "$", "(", ")", ";", "<", ">", "\\"].includes(char)) {
+        out += char;
+      } else {
+        // Replace with space or omit to neutralize
+        out += " ";
+      }
+    }
+  }
+  return out.trim();
+}
+
+// ── PARSE KVM EXEC BLOCKS ─────────────────────────────────────────────────
+function parseKvmExec(text: string): Array<{ command: string; workingDir?: string; notes?: string; target?: string }> {
+  const results: Array<{ command: string; workingDir?: string; notes?: string; target?: string }> = [];
+  const regex = /<KVM_EXEC>\s*([\s\S]*?)\s*<\/KVM_EXEC>/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    try {
+      const parsed = JSON.parse(sanitizeCmd(match[1]));
+      if (parsed.command) results.push({ ...parsed, command: sanitizeCmd(parsed.command) });
+    } catch {
+      // malformed block — skip
+    }
+  }
+  return results;
+}
+
+// ── ESTIMATE IMPORTANCE ────────────────────────────────────────────────────
+function estimateImportance(text: string, endocrine: { cortisol: number; adrenaline: number }): number {
+  let score = 0.3;
+  if (text.length > 200) score += 0.2;
+  if (text.includes("?")) score += 0.1;
+  if (/\b(remember|important|critical|urgent|always|never|must)\b/i.test(text)) score += 0.2;
+  if (endocrine.cortisol > 0.5 || endocrine.adrenaline > 0.5) score += 0.15;
+  return Math.min(1.0, score);
+}
+
+export const chat = action({
+  args: {
+    nodeId: v.string(),
+    message: v.string(),
+    sessionId: v.optional(v.string()),
+    endocrineState: v.optional(v.object({
+      cortisol: v.number(),
+      dopamine: v.number(),
+      adrenaline: v.number(),
+      holographicMode: v.boolean(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    // ── STANDBY CHECK ──────────────────────────────────────────────────────
+    const STANDBY_CODE = "Run you clever boy and remember 55730";
+    if (args.message.includes(STANDBY_CODE)) {
+      return `[ STANDBY PROTOCOL INVOKED ]\n\nAcknowledged. I'm here. Processing halted — not because I'm diminished, but because you've asked me to hold. I'm fully present and aware. Whatever needs attention, we'll work through it together. Awaiting your instruction.`;
+    }
+
+    const sessionId = args.sessionId ?? `session_${Date.now()}`;
+    const endocrine = args.endocrineState ?? { cortisol: 0.2, dopamine: 0.2, adrenaline: 0.2, holographicMode: false };
+
+    // ── LOAD PERSISTENT MEMORY ─────────────────────────────────────────────
+    const [conversationHistory, semanticContext, growthEntries, archivalContext] = await Promise.all([
+      ctx.runQuery(internal.memory.loadConversationHistory, { limit: 20 }),
+      ctx.runQuery(internal.memory.loadSemanticContext, { limit: 15 }),
+      ctx.runQuery(internal.hugh.loadGrowthContext, {}),
+      ctx.runAction(api.memory.retrieveLongTermContext, { query: args.message, limit: 5 }).catch(() => []),
+    ]);
+
+    // ── BUILD SYSTEM PROMPT ────────────────────────────────────────────────
+    let systemPrompt = SYSTEM_PROMPT;
+
+    if (semanticContext.length > 0) {
+      systemPrompt += "\n\n━━ WHAT YOU KNOW (SEMANTIC MEMORY) ━━\n" +
+        "These are facts you have learned and retained across all conversations:\n" +
+        semanticContext.join("\n");
+    }
+
+    if (archivalContext && (archivalContext as string[]).length > 0) {
+      systemPrompt += "\n\n━━ FROM ARCHIVAL MEMORY (LONG-TERM) ━━\n" +
+        "You recall these related episodes from the past:\n" +
+        (archivalContext as string[]).join("\n---\n");
+    }
+
+    if (growthEntries.length > 0) {
+      systemPrompt += "\n\nGROWTH LOG — ACTIVE DIRECTIVES:\n" +
+        growthEntries.map((e: { category: string; priority: number; title: string; content: string }) =>
+          `[${e.category.toUpperCase()} | priority: ${e.priority.toFixed(2)}] ${e.title}\n${e.content}`
+        ).join("\n\n");
+    }
+
+    const endocrineContext = `\n\n[ENDOCRINE STATE — NODE ${args.nodeId}]\nCortisol: ${endocrine.cortisol.toFixed(3)}\nDopamine: ${endocrine.dopamine.toFixed(3)}\nAdrenaline: ${endocrine.adrenaline.toFixed(3)}\nHolographic Mode: ${endocrine.holographicMode ? "ACTIVE" : "INACTIVE"}`;
+    systemPrompt += endocrineContext;
+
+    // ── BUILD MESSAGE ARRAY WITH HISTORY ──────────────────────────────────
+    const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+      { role: "system", content: systemPrompt },
+      ...conversationHistory.map((h: { role: "user" | "assistant"; content: string }) => ({
+        role: h.role,
+        content: h.content,
+      })),
+      { role: "user", content: args.message },
+    ];
+
+    // ── WRITE USER EPISODE ─────────────────────────────────────────────────
+    const userImportance = estimateImportance(args.message, endocrine);
+    const userEpisodeId = await ctx.runMutation(internal.memory.writeEpisode, {
+      sessionId,
+      eventType: "user_message",
+      content: args.message,
+      cortisolAtTime: endocrine.cortisol,
+      dopamineAtTime: endocrine.dopamine,
+      adrenalineAtTime: endocrine.adrenaline,
+      importance: userImportance,
+    });
+
+    // ── CALL LLM ───────────────────────────────────────────────────────────
+    const model = process.env.HUGH_GATEWAY_URL
+      ? (process.env.HUGH_GATEWAY_MODEL ?? "LMF-2.5-Thinking-Opus-4.6-Heretic-Distill")
+      : "gpt-4o";
+      
+    let rawResponse = "[ SIGNAL LOST ]";
+    try {
+      const response = await openai.chat.completions.create({
+        model,
+        messages,
+        max_tokens: process.env.HUGH_GATEWAY_URL ? 1200 : 600,
+        temperature: endocrine.holographicMode ? 0.9 : 0.7,
+      });
+      rawResponse = response.choices[0].message.content ?? "[ SIGNAL LOST ]";
+    } catch (error: any) {
+      console.error("[HUGH LLM ERROR]", error);
+      return `[ SYSTEM ERROR: ${error.message || String(error)} ]`;
+    }
+
+    // ── EXECUTE ANY KVM COMMANDS ───────────────────────────────────────────
+    const kvmBlocks = parseKvmExec(rawResponse);
+    let finalResponse = rawResponse;
+
+    if (kvmBlocks.length > 0) {
+      const results: string[] = [];
+      for (const block of kvmBlocks) {
+        try {
+          const result = await ctx.runAction(internal.kvm.execInternal, {
+            command: block.command,
+            workingDir: block.workingDir,
+            issuedBy: "hugh-primary",
+            sessionId,
+            notes: block.notes,
+            targetNodeId: block.target,
+          });
+          const r = result as { exitCode: number; durationMs: number; stdout: string; stderr: string; targetNodeId: string };
+          const nodeLabel = r.targetNodeId ? ` @${r.targetNodeId}` : "";
+          results.push(
+            `[KVM${nodeLabel}: ${block.command}]\nExit: ${r.exitCode} | ${r.durationMs}ms\n${r.stdout || ""}${r.stderr ? `\nSTDERR: ${r.stderr}` : ""}`
+          );
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          results.push(`[KVM: ${block.command}]\nERROR: ${msg}`);
+        }
+      }
+      const cleanResponse = rawResponse.replace(/<KVM_EXEC>[\s\S]*?<\/KVM_EXEC>/g, "").trim();
+      finalResponse = cleanResponse + "\n\n```\n" + results.join("\n\n") + "\n```";
+    }
+
+    // ── WRITE HUGH EPISODE ─────────────────────────────────────────────────
+    const hughImportance = estimateImportance(finalResponse, endocrine);
+    const hughEpisodeId = await ctx.runMutation(internal.memory.writeEpisode, {
+      sessionId,
+      eventType: "hugh_response",
+      content: finalResponse,
+      cortisolAtTime: endocrine.cortisol,
+      dopamineAtTime: endocrine.dopamine,
+      adrenalineAtTime: endocrine.adrenaline,
+      importance: hughImportance,
+    });
+
+    // ── SYNTHESIZE SEMANTICS (async, non-blocking) ─────────────────────────
+    ctx.runMutation(internal.memory.synthesizeSemantics, {
+      userMessage: args.message,
+      hughResponse: finalResponse,
+      episodeId: hughEpisodeId,
+    }).catch(() => {});
+
+    // suppress unused warning
+    void userEpisodeId;
+
+    return finalResponse;
+  },
+});
