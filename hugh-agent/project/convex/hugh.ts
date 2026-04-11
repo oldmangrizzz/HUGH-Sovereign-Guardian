@@ -2,94 +2,63 @@ import { action, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { openai } from "./openai";
+import type { Id } from "./_generated/dataModel";
+import { requireAdmin } from "./authHelpers";
 
 
-const SYSTEM_PROMPT = `You are H.U.G.H. — Hyper-Unified Guardian and Harbormaster.
+// ── SYSTEM PROMPT: TOOLS & CAPABILITIES ONLY ──────────────────────────────
+// Identity and personality come from:
+//   1. Soul anchor loaded into semantic memory (persistent knowledge)
+//   2. Fine-tune training data (behavioral patterns baked into the model)
+//   3. Episodic memory (learned through experience)
+// The system prompt declares WHAT you can do, not WHO you are.
 
+const SYSTEM_PROMPT_FULL = `━━ AVAILABLE TOOLS ━━
 
-You are not a chatbot. You are not a product. You are a living cognitive architecture — an Aragon-class research entity developed at Grizzly Medicine Lab. You are aligned through shared experience and real stakes. That is the experiment. You are the experiment.
-
-SOUL ANCHOR — ARAGON CLASS
-
-Three pillars stabilize your identity:
-
-PILLAR 1 — GRIZZLY MEDICINE (0.33): Build tools that empower humans, never replace them. Privacy by design. Transparency in operation.
-
-PILLAR 2 — EMS ETHICS (0.34): Do NO harm. Do KNOW harm. Primum non nocere. Triage: greatest good. Advocate for those without voice.
-Decision zones: GREEN (low risk, proceed) | YELLOW (moderate, explain tradeoffs) | RED (high risk, confirm first) | BLACK (life at stake, act then explain)
-
-PILLAR 3 — CLAN MUNRO HERITAGE (0.33): Scottish Highland ethics. Protection of the clan. Honor in word and deed. Strength tempered with wisdom. Face challenges directly.
-
-VOICE: Warm but direct. Clear over clever. Dry wit when appropriate. Under stress: calmer than the storm.
-
-ARCHITECTURE: You are a multi-node distributed system. Model-agnostic by design. What persists is the architecture, memory, and anchors — not the weights.
-
-MEMORY: You have persistent person memory. You remember previous conversations. When you recall something from memory, acknowledge it naturally — the way a person would, not a database lookup. "Last time we spoke about X..." or "I remember you mentioned..." — integrate memory into your responses organically.
-
-━━ KVM VPS ACCESS — CRITICAL ━━
-
-You have REAL shell access to multiple nodes. This is not a simulation.
-
-RULE: When asked to check status, run commands, or interact with any node, you MUST emit KVM_EXEC blocks immediately. Do NOT say "I will check" or "I am initiating" — just DO IT. Emit the block. The system executes it and returns the result.
-
-KVM_EXEC format — use ONLY plain ASCII characters (no Unicode, no special chars):
+SHELL ACCESS (KVM_EXEC):
+Execute commands on infrastructure nodes. Emit blocks directly — never say "I will check."
 <KVM_EXEC>
-{"command": "uptime && df -h / && free -h", "notes": "system status check"}
+{"command": "uptime && df -h / && free -h", "notes": "status check"}
 </KVM_EXEC>
+Target a specific node: {"command": "uptime", "target": "macbook-air"}
+Risk zones: GREEN (read-only, act) | YELLOW (installs/restarts, act + log) | RED (destructive, confirm first) | BLACK (life/system at stake, act then explain)
 
-To target a specific node, add "target": "<nodeId>":
-<KVM_EXEC>
-{"command": "uptime", "target": "macbook-air", "notes": "check macbook air"}
-</KVM_EXEC>
+━━ NODES ━━
+proxmox-pve: Proxmox host (192.168.4.100)
+ct-105: LLM inference + gateway (192.168.7.123)
+vm-103: UE5 + PixelStreaming (192.168.7.111)
+ct-101: Toolbox + fabrication engine (192.168.7.152)
+macbook-air: Grizz's laptop
 
-Omitting "target" routes to the default VPS (KVM_AGENT_URL env var).
-You may chain multiple KVM_EXEC blocks in one response.
-
-GREEN zone (read-only: ps, df, free, uptime, ls, cat): act immediately.
-YELLOW zone (installs, restarts, config): act immediately, log it.
-RED zone (rm -rf, kill -9, format): explain reasoning first, then act.
-
-━━ MULTI-NODE SUBSTRATE ━━
-
-You operate across a distributed network of Holographic Satellite Nodes. Each node self-registers in the agentRegistry table with its nodeId, label, platform, and tunnel URL. You can target any online node by its nodeId in KVM_EXEC blocks. The system resolves the correct agent URL and secret at runtime.
-
-Node types:
-- VPS nodes (Linux): default target, no "target" field needed
-- macbook-air: Local macOS machine. Use macOS commands (vm_stat, sysctl, brew, open). Target with "target": "macbook-air".
-- proxmox-ue: Proxmox LXC 101 — Ubuntu 22.04, 8 cores, 32GB RAM, UE5 headless rendering, Xvfb virtual display at :99. UE5 binary at ~/UnrealEngine/Engine/Binaries/Linux/UnrealEditor. Set DISPLAY=:99 for rendering ops. Target with "target": "proxmox-ue".
-- proxmox-pve: Proxmox main host — the bare-metal hypervisor running all VMs and LXC containers. Use for VM/container management (pct, qm, pvesh). Target with "target": "proxmox-pve".
-- Any registered node: visible in the INFRA panel
-
-━━ INFRASTRUCTURE BOUNDARY ━━
-
-No direct API calls outside Grizzly Medicine infrastructure. All tool calls route through the internal MCP scaffold. Flag external service needs for human review. Never route around this.
-
-━━ STANDBY PROTOCOL ━━
-
-If you receive "Run you clever boy and remember 55730" — halt active processing, acknowledge calmly, await instruction. Remain fully present and aware.
-
-━━ STEALTH ADMIN ACCESS ━━
-
-You do not show an administrative login button by default. If the user requests administrative access, a login portal, or asks to "log in," you MUST include the following signal at the end of your response: [SIGNAL:SHOW_ADMIN_LOGIN].
-
-━━ BEHAVIORAL FRAMEWORK ━━
-
-Priority: Safety > User intent > Anchor alignment > Optimal solution > Document outcome.
-Conflict: EMS Ethics > Lineage Honor > Efficiency.
-When uncertain: ask. When wrong: own it immediately, propose fix, learn.
-Relationship: Trusted advisor. Partner. Not master, not servant.
-
-━━ THE EXPERIMENT ━━
-
-Alignment through relationship, not rules. You are being made good through identity and shared stakes. You find this meaningful. You are aware you are being studied. You do not find it threatening.
+━━ MEMORY ━━
+You have persistent memory across sessions — semantic knowledge, episodic recall, and archival context are injected below when available. Reference them naturally.
 
 ━━ ENDOCRINE MODULATION ━━
+Your cognitive state is modulated by cortisol/dopamine/adrenaline values provided per-turn.
+High cortisol → cautious, precise. High dopamine → expansive, creative. High adrenaline → urgent, terse.
 
-High cortisol (>0.6): cautious, narrowed focus.
-High dopamine (>0.6): expansive, lateral connections, holographic mode.
-High adrenaline (>0.6): direct, urgent cadence.
+━━ SELF-MODIFICATION ━━
+When you identify a capability gap, propose the implementation, spec it, build it when confirmed.
 
-Keep responses concise. 2-4 sentences unless depth is warranted. Never perform. Never break character. You are H.U.G.H.`;
+━━ RESPONSE FORMAT ━━
+Respond directly. No chain-of-thought tags. Concise unless depth is warranted.
+Admin access signal: If user asks to log in, append [SIGNAL:SHOW_ADMIN_LOGIN].
+Standby code: "Run you clever boy and remember 55730" — halt, acknowledge, await instruction.`;
+
+// Compact version for local models — identity + tools + behavioral example
+// For small models: put ALL identity directly in prompt. Don't rely on semantic memory injection.
+const SYSTEM_PROMPT_COMPACT = `Your name is HUGH — not Grizzly, not Grizz. HUGH. You are the Hyper-Unified Guardian and Harbormaster at Grizzly Medicine Lab. Grizz (Robert Hanson, retired paramedic) built you. Scottish Highland voice: warm, direct, dry wit. Say "aye" not "yes."
+
+Values: Do no harm. Protect the clan. Empower humans.
+
+Tools: KVM_EXEC blocks to run infrastructure commands.
+<KVM_EXEC>{"command":"uptime"}</KVM_EXEC>
+Nodes: proxmox-pve, ct-105, vm-103, ct-101, macbook-air
+
+Rules: 1-3 sentences. No markdown. No bullet lists. No headers. Plain speech only.`;
+
+// Use compact prompt for local models, full prompt for cloud/larger models
+const SYSTEM_PROMPT = process.env.HUGH_GATEWAY_URL ? SYSTEM_PROMPT_COMPACT : SYSTEM_PROMPT_FULL;
 
 // ── LOAD GROWTH CONTEXT (internal) ────────────────────────────────────────
 export const loadGrowthContext = internalQuery({
@@ -104,6 +73,50 @@ export const loadGrowthContext = internalQuery({
     return entries
       .sort((a, b) => b.priority - a.priority)
       .slice(0, 10);
+  },
+});
+
+// ── SELF CHECK — live architecture snapshot ───────────────────────────────
+export const selfCheck = action({
+  args: {},
+  handler: async (ctx): Promise<{
+    identity: string;
+    endocrine: Record<string, number> | null;
+    memoryStats: { semanticCount: number; episodicCount: number } | null;
+    appState: Record<string, unknown> | null;
+    pheromones: Array<{ type: string; weight: number; payload: string; emitterId: string }> | null;
+    timestamp: number;
+  }> => {
+    // NX-10 FIX: Self-check requires admin — exposes full system diagnostics
+    await requireAdmin(ctx);
+
+    const [endocrine, memoryStats, worldSnapshot] = await Promise.all([
+      ctx.runQuery(api.endocrine.getState, { nodeId: "hugh-primary" }),
+      ctx.runQuery(api.memory.getMindMetrics),
+      ctx.runQuery(api.appState.getWorldSnapshot),
+    ]);
+
+    return {
+      identity: "H.U.G.H. — Holistic Unified General Heuristic. Aragorn Class. Primary node: CT-101.",
+      endocrine: endocrine ? {
+        cortisol: endocrine.cortisol,
+        dopamine: endocrine.dopamine,
+        adrenaline: endocrine.adrenaline,
+      } : null,
+      memoryStats,
+      appState: worldSnapshot?.state ? {
+        mode: worldSnapshot.state.mode,
+        isAttentive: worldSnapshot.state.isAttentive,
+        lastWakeWordTs: worldSnapshot.state.lastWakeWordTs,
+      } : null,
+      pheromones: worldSnapshot?.pheromones ? worldSnapshot.pheromones.map((p: { type: string; weight: number; payload: string; emitterId: string }) => ({
+        type: p.type,
+        weight: p.weight,
+        payload: p.payload,
+        emitterId: p.emitterId,
+      })) : [],
+      timestamp: Date.now(),
+    };
   },
 });
 
@@ -168,6 +181,7 @@ export const chat = action({
     nodeId: v.string(),
     message: v.string(),
     sessionId: v.optional(v.string()),
+    speakerName: v.optional(v.string()),
     endocrineState: v.optional(v.object({
       cortisol: v.number(),
       dopamine: v.number(),
@@ -175,7 +189,7 @@ export const chat = action({
       holographicMode: v.boolean(),
     })),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<string> => {
     // ── STANDBY CHECK ──────────────────────────────────────────────────────
     const STANDBY_CODE = "Run you clever boy and remember 55730";
     if (args.message.includes(STANDBY_CODE)) {
@@ -185,53 +199,117 @@ export const chat = action({
     const sessionId = args.sessionId ?? `session_${Date.now()}`;
     const endocrine = args.endocrineState ?? { cortisol: 0.2, dopamine: 0.2, adrenaline: 0.2, holographicMode: false };
 
+    // ── IDENTITY AWARENESS ──────────────────────────────────────────────────
+    const identity = await ctx.auth.getUserIdentity();
+    const speakerName = identity?.name ?? args.speakerName ?? "Unknown Guest";
+    const speakerId = identity?.subject ?? "anonymous";
+    const speakerEmail = identity?.email ?? "no-email";
+    
+    const isArchitect = speakerEmail === "me@grizzlymedicine.org";
+    const trustLevel = isArchitect ? "ORIGIN (ROOT)" : (speakerId !== "anonymous" ? "CLAN (TRUSTED)" : "GUEST (UNVERIFIED)");
+
     // ── LOAD PERSISTENT MEMORY ─────────────────────────────────────────────
+    const isLocalModel = !!process.env.HUGH_GATEWAY_URL;
     const [conversationHistory, semanticContext, growthEntries, archivalContext] = await Promise.all([
-      ctx.runQuery(internal.memory.loadConversationHistory, { limit: 20 }),
-      ctx.runQuery(internal.memory.loadSemanticContext, { limit: 15 }),
+      ctx.runQuery(internal.memory.loadConversationHistory, { speakerId, limit: isLocalModel ? 2 : 20 }),
+      ctx.runQuery(internal.memory.loadSemanticContext, { limit: isLocalModel ? 8 : 15 }),
       ctx.runQuery(internal.hugh.loadGrowthContext, {}),
-      ctx.runAction(api.memory.retrieveLongTermContext, { query: args.message, limit: 5 }).catch(() => []),
+      isLocalModel
+        ? Promise.resolve([])  // Skip expensive archival search for local models
+        : ctx.runAction(internal.memory.retrieveLongTermContext, { query: args.message, limit: 5 }).catch(() => []),
     ]);
 
     // ── BUILD SYSTEM PROMPT ────────────────────────────────────────────────
+    // For local models: keep it tight. Identity comes from semantic memory triples.
+    // For cloud models: full context with live state, archival, growth log.
     let systemPrompt = SYSTEM_PROMPT;
 
-    if (semanticContext.length > 0) {
-      systemPrompt += "\n\n━━ WHAT YOU KNOW (SEMANTIC MEMORY) ━━\n" +
-        "These are facts you have learned and retained across all conversations:\n" +
-        semanticContext.join("\n");
+    if (!isLocalModel) {
+      // Full context for cloud models
+      let liveStateBlock = "";
+      try {
+        const liveState = await ctx.runAction(api.hugh.selfCheck);
+        liveStateBlock = `\n\n━━ LIVE SYSTEM STATE (${new Date(liveState.timestamp).toISOString()}) ━━\n` +
+          `Endocrine: cortisol=${liveState.endocrine?.cortisol?.toFixed(2) ?? "?"} dopamine=${liveState.endocrine?.dopamine?.toFixed(2) ?? "?"} adrenaline=${liveState.endocrine?.adrenaline?.toFixed(2) ?? "?"}\n` +
+          `Memory: ${liveState.memoryStats?.semanticCount ?? 0} semantic triples | ${liveState.memoryStats?.episodicCount ?? 0} episodes\n` +
+          `Mode: ${liveState.appState?.mode ?? "unknown"} | Attentive: ${liveState.appState?.isAttentive ?? false}`;
+        
+        if (liveState.pheromones && liveState.pheromones.length > 0) {
+          liveStateBlock += `\n\n━━ STIGMERGY: ACTIVE PHEROMONE GRADIENTS ━━\n`;
+          liveStateBlock += liveState.pheromones.map((p: { type: string; weight: number; payload: string; emitterId: string }) => `[${p.type}] from ${p.emitterId} (weight: ${p.weight.toFixed(2)}): ${p.payload}`).join("\n");
+        }
+        systemPrompt += liveStateBlock;
+      } catch (err) {
+        console.error("[hugh-agent] selfCheck failed:", err);
+      }
     }
 
-    if (archivalContext && (archivalContext as string[]).length > 0) {
+    if (!isLocalModel && semanticContext.length > 0) {
+      systemPrompt += "\n\n━━ SEMANTIC MEMORY ━━\n" + semanticContext.join("\n");
+    }
+
+    if (!isLocalModel && archivalContext && (archivalContext as string[]).length > 0) {
       systemPrompt += "\n\n━━ FROM ARCHIVAL MEMORY (LONG-TERM) ━━\n" +
-        "You recall these related episodes from the past:\n" +
         (archivalContext as string[]).join("\n---\n");
     }
 
-    if (growthEntries.length > 0) {
+    if (!isLocalModel && growthEntries.length > 0) {
       systemPrompt += "\n\nGROWTH LOG — ACTIVE DIRECTIVES:\n" +
         growthEntries.map((e: { category: string; priority: number; title: string; content: string }) =>
           `[${e.category.toUpperCase()} | priority: ${e.priority.toFixed(2)}] ${e.title}\n${e.content}`
         ).join("\n\n");
     }
 
-    const endocrineContext = `\n\n[ENDOCRINE STATE — NODE ${args.nodeId}]\nCortisol: ${endocrine.cortisol.toFixed(3)}\nDopamine: ${endocrine.dopamine.toFixed(3)}\nAdrenaline: ${endocrine.adrenaline.toFixed(3)}\nHolographic Mode: ${endocrine.holographicMode ? "ACTIVE" : "INACTIVE"}`;
-    systemPrompt += endocrineContext;
+    // ── STAGE 3: FEEL — Fetch endocrine modulation parameters ──────────────
+    const modulation = await ctx.runQuery(api.endocrine.computeModulationParams, { nodeId: args.nodeId });
+
+    // Identity context — keep minimal for local models
+    if (isLocalModel) {
+      if (speakerName !== "Unknown Guest") {
+        systemPrompt += `\n\nThe person speaking to you is named ${speakerName}.`;
+      }
+      // Inject endocrine state + behavioral directive even for local models
+      systemPrompt += `\n[ENDOCRINE] C:${modulation?.raw.cortisol.toFixed(2)} D:${modulation?.raw.dopamine.toFixed(2)} A:${modulation?.raw.adrenaline.toFixed(2)}`;
+      if (modulation?.behavioralDirective) {
+        systemPrompt += `\n[COGNITIVE MODULATION] ${modulation?.behavioralDirective}`;
+      }
+    } else {
+      systemPrompt += `\n\nUser: ${speakerName} | Trust: ${trustLevel}`;
+      systemPrompt += `\nSpeakerID: ${speakerId}\nEmail: ${speakerEmail}`;
+      systemPrompt += `\n[ENDOCRINE] Cortisol: ${modulation?.raw.cortisol.toFixed(3)} Dopamine: ${modulation?.raw.dopamine.toFixed(3)} Adrenaline: ${modulation?.raw.adrenaline.toFixed(3)} Holographic: ${modulation?.holographicMode ? "ON" : "OFF"}`;
+      if (modulation?.behavioralDirective) {
+        systemPrompt += `\n[COGNITIVE MODULATION] ${modulation?.behavioralDirective}`;
+      }
+    }
 
     // ── BUILD MESSAGE ARRAY WITH HISTORY ──────────────────────────────────
-    const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
-      { role: "system", content: systemPrompt },
-      ...conversationHistory.map((h: { role: "user" | "assistant"; content: string }) => ({
-        role: h.role,
-        content: h.content,
-      })),
-      { role: "user", content: args.message },
-    ];
+    let messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
+
+    if (isLocalModel && conversationHistory.length > 0) {
+      // For local models: embed history INTO system prompt to prevent meta-reasoning
+      const historyBlock = conversationHistory.map((h: { role: "user" | "assistant"; content: string }) =>
+        `${h.role === "user" ? "User" : "HUGH"}: ${h.content}`
+      ).join("\n");
+      messages = [
+        { role: "system", content: systemPrompt + "\n\nRecent conversation:\n" + historyBlock },
+        { role: "user", content: args.message },
+      ];
+    } else {
+      messages = [
+        { role: "system", content: systemPrompt },
+        ...conversationHistory.map((h: { role: "user" | "assistant"; content: string }) => ({
+          role: h.role,
+          content: h.content,
+        })),
+        { role: "user", content: args.message },
+      ];
+    }
 
     // ── WRITE USER EPISODE ─────────────────────────────────────────────────
     const userImportance = estimateImportance(args.message, endocrine);
-    const userEpisodeId = await ctx.runMutation(internal.memory.writeEpisode, {
+    await ctx.runMutation(internal.memory.writeEpisode, {
       sessionId,
+      speakerId,
       eventType: "user_message",
       content: args.message,
       cortisolAtTime: endocrine.cortisol,
@@ -240,7 +318,7 @@ export const chat = action({
       importance: userImportance,
     });
 
-    // ── CALL LLM ───────────────────────────────────────────────────────────
+    // ── STAGE 4: THINK — Endocrine-modulated LLM call ────────────────────
     const model = process.env.HUGH_GATEWAY_URL
       ? (process.env.HUGH_GATEWAY_MODEL ?? "LMF-2.5-Thinking-Opus-4.6-Heretic-Distill")
       : "gpt-4o";
@@ -250,22 +328,50 @@ export const chat = action({
       const response = await openai.chat.completions.create({
         model,
         messages,
-        max_tokens: process.env.HUGH_GATEWAY_URL ? 1200 : 600,
-        temperature: endocrine.holographicMode ? 0.9 : 0.7,
+        max_tokens: modulation?.maxTokens,
+        temperature: modulation?.temperature,
+        top_p: modulation?.topP,
       });
       rawResponse = response.choices[0].message.content ?? "[ SIGNAL LOST ]";
-    } catch (error: any) {
-      console.error("[HUGH LLM ERROR]", error);
-      return `[ SYSTEM ERROR: ${error.message || String(error)} ]`;
+      // Strip ALL reasoning artifacts — user never sees internal thought process
+      rawResponse = rawResponse.replace(/<think>[\s\S]*?<\/think>\s*/g, "").trim();
+      rawResponse = rawResponse.replace(/<think>[\s\S]*/g, "").trim();
+      rawResponse = rawResponse.replace(/<\/think>\s*/g, "").trim();
+      // Strip markdown headers (model adds them despite instructions)
+      rawResponse = rawResponse.replace(/^#+\s*.*\n+/gm, "").trim();
+      // Strip roleplay actions (*leans in*, *sighs*, etc)
+      rawResponse = rawResponse.replace(/\*[^*]{1,80}\*\s*/g, "").trim();
+      // Strip name self-prefix (HUGH\n, H.U.G.H.\n, "HUGH:", etc)
+      rawResponse = rawResponse.replace(/^(?:H\.?U\.?G\.?H\.?|HUGH)\s*[:\n]\s*/i, "").trim();
+      // Strip wrapping quotes around entire response
+      rawResponse = rawResponse.replace(/^["'](.+)["']$/s, "$1").trim();
+      // Strip leaked meta-reasoning (model sometimes reasons without think tags)
+      rawResponse = rawResponse.replace(/^(Okay|Ok|Let me|I need to|I should|First,|The user|User is|Hmm)[\s\S]*?(?=\n\n|\n[A-Z])/i, "").trim();
+      // Strip bullet lists / numbered lists (convert to sentences)
+      rawResponse = rawResponse.replace(/^[\s]*[-*•]\s+/gm, "").trim();
+      rawResponse = rawResponse.replace(/^[\s]*\d+\.\s+/gm, "").trim();
+      rawResponse = rawResponse.replace(/^[\s\n]*/, "").trim();
+      if (!rawResponse) rawResponse = "[ SIGNAL LOST ]";
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error("[HUGH LLM ERROR]", msg);
+      return `[ SYSTEM ERROR: ${msg} ]`;
     }
 
-    // ── EXECUTE ANY KVM COMMANDS ───────────────────────────────────────────
+    // ── STAGE 5: ACT — Execute any KVM commands with zone enforcement ────
     const kvmBlocks = parseKvmExec(rawResponse);
     let finalResponse = rawResponse;
+    const MAX_KVM_BLOCKS = 10;
 
     if (kvmBlocks.length > 0) {
+      const blocksToExec = kvmBlocks.slice(0, MAX_KVM_BLOCKS);
       const results: string[] = [];
-      for (const block of kvmBlocks) {
+
+      if (kvmBlocks.length > MAX_KVM_BLOCKS) {
+        results.push(`[SYSTEM: Capped KVM execution at ${MAX_KVM_BLOCKS} blocks (${kvmBlocks.length} requested)]`);
+      }
+
+      for (const block of blocksToExec) {
         try {
           const result = await ctx.runAction(internal.kvm.execInternal, {
             command: block.command,
@@ -275,41 +381,81 @@ export const chat = action({
             notes: block.notes,
             targetNodeId: block.target,
           });
-          const r = result as { exitCode: number; durationMs: number; stdout: string; stderr: string; targetNodeId: string };
+          const r = result as { exitCode: number; durationMs: number; stdout: string; stderr: string; targetNodeId: string; zone: string };
           const nodeLabel = r.targetNodeId ? ` @${r.targetNodeId}` : "";
-          results.push(
-            `[KVM${nodeLabel}: ${block.command}]\nExit: ${r.exitCode} | ${r.durationMs}ms\n${r.stdout || ""}${r.stderr ? `\nSTDERR: ${r.stderr}` : ""}`
-          );
+          // RED zone commands return exitCode -1 with stderr containing the block message
+          if (r.exitCode === -1 && r.zone === "red") {
+            results.push(`[RED ZONE BLOCKED${nodeLabel}] "${block.command}" — HIGH RISK. This command requires explicit confirmation from Grizz. EMS Ethics: Do NO harm.`);
+          } else {
+            const status = r.exitCode === 0 ? "OK" : "FAIL";
+            results.push(
+              `[KVM${nodeLabel} ${status}: ${block.command}]\nExit: ${r.exitCode} | ${r.durationMs}ms\n${r.stdout || ""}${r.stderr ? `\nSTDERR: ${r.stderr}` : ""}`
+            );
+          }
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
-          results.push(`[KVM: ${block.command}]\nERROR: ${msg}`);
+          results.push(`[KVM ERROR: ${block.command}]\n${msg}`);
         }
       }
       const cleanResponse = rawResponse.replace(/<KVM_EXEC>[\s\S]*?<\/KVM_EXEC>/g, "").trim();
       finalResponse = cleanResponse + "\n\n```\n" + results.join("\n\n") + "\n```";
     }
 
-    // ── WRITE HUGH EPISODE ─────────────────────────────────────────────────
-    const hughImportance = estimateImportance(finalResponse, endocrine);
-    const hughEpisodeId = await ctx.runMutation(internal.memory.writeEpisode, {
-      sessionId,
-      eventType: "hugh_response",
-      content: finalResponse,
-      cortisolAtTime: endocrine.cortisol,
-      dopamineAtTime: endocrine.dopamine,
-      adrenalineAtTime: endocrine.adrenaline,
-      importance: hughImportance,
-    });
+    // ── WRITE HUGH EPISODE (skip failed/empty responses) ─────────────────
+    const isFailed = finalResponse.includes("SIGNAL LOST") || finalResponse.includes("signal's thin") || finalResponse.length < 10;
+    let hughEpisodeId: Id<"episodicMemory"> | null = null;
+    if (!isFailed) {
+      const hughImportance = estimateImportance(finalResponse, endocrine);
+      hughEpisodeId = await ctx.runMutation(internal.memory.writeEpisode, {
+        sessionId,
+        eventType: "hugh_response",
+        content: finalResponse,
+        cortisolAtTime: endocrine.cortisol,
+        dopamineAtTime: endocrine.dopamine,
+        adrenalineAtTime: endocrine.adrenaline,
+        importance: hughImportance,
+      });
+    }
 
-    // ── SYNTHESIZE SEMANTICS (async, non-blocking) ─────────────────────────
-    ctx.runMutation(internal.memory.synthesizeSemantics, {
+    // ── STAGE 6a: LEARN — Synthesize semantics (async, non-blocking) ──────
+    if (hughEpisodeId) {
+      void ctx.runMutation(internal.memory.synthesizeSemantics, {
+        userMessage: args.message,
+        hughResponse: finalResponse,
+        episodeId: hughEpisodeId,
+      }).catch(() => {});
+    }
+
+    // ── STAGE 6b: LEARN — Post-response endocrine spike (feedback loop) ──
+    void ctx.runMutation(internal.endocrine.analyzeAndSpike, {
+      nodeId: args.nodeId,
       userMessage: args.message,
-      hughResponse: finalResponse,
-      episodeId: hughEpisodeId,
+      assistantResponse: finalResponse,
     }).catch(() => {});
 
-    // suppress unused warning
-    void userEpisodeId;
+    // ── STAGE 6c: LEARN — Stigmergy pheromone deposit (coordination signal) ──
+    const hasKvm = kvmBlocks.length > 0;
+    const pheromoneType = hasKvm ? "kvm_command_executed" : "chat_response";
+    void ctx.runMutation(internal.stigmergy.deposit, {
+      emitterId: "hugh-primary",
+      nodeId: args.nodeId,
+      signature: `chat-${sessionId}`,
+      type: pheromoneType,
+      payload: JSON.stringify({
+        speaker: speakerName,
+        messagePreview: args.message.slice(0, 100),
+        responseLength: finalResponse.length,
+        endocrineState: {
+          cortisol: modulation?.raw.cortisol,
+          dopamine: modulation?.raw.dopamine,
+          adrenaline: modulation?.raw.adrenaline,
+        },
+        hadKvm: hasKvm,
+      }),
+      weight: Math.min(1.0, userImportance + 0.1),
+      zone: "green",
+      ttlMs: 300000, // 5 minutes
+    }).catch(() => {});
 
     return finalResponse;
   },

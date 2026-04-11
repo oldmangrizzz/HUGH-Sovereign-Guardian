@@ -1,0 +1,7 @@
+AI models sometimes act like they have emotions—why? 
+
+We studied one of our recent models and found that it draws on emotion concepts learned from text to inhabit its role as Claude, the AI assistant. These representations influence its behavior the way emotions might influence a human. 
+
+And that has real consequences, affecting how Claude answers chats, writes code, and makes decisions.
+
+Read more about this research: https://www.anthropic.com/research/emotion-concepts-function

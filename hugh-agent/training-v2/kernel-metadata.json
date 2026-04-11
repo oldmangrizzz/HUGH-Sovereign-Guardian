@@ -1,0 +1,15 @@
+{
+  "id": "grizzlymedicine/h-u-g-h-unsloth-synthesis-v1",
+  "title": "H.U.G.H. Unsloth Synthesis V1",
+  "code_file": "main.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": false,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": ["grizzlymedicine/hugh-personality-v3-arc"],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

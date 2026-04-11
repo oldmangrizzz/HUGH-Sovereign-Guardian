@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
+import { Doc, Id } from "../convex/_generated/dataModel";
 import { toast } from "sonner";
 
 type Category = "directive" | "observation" | "correction" | "expansion" | "anchor_update";
@@ -166,7 +166,7 @@ export default function GrowthLogPanel() {
 
       {/* ── ENTRY LIST ── */}
       <div className="space-y-2">
-        {entries?.map(entry => {
+        {entries?.map((entry: Doc<"growthLog">) => {
           const cat = CATEGORY_COLORS[entry.category as Category] ?? { color: "#64748b", label: entry.category.toUpperCase() };
           return (
             <div key={entry._id} className="panel relative overflow-hidden"
@@ -183,7 +183,7 @@ export default function GrowthLogPanel() {
                   <p className="font-mono text-[10px] text-workshop-muted line-clamp-2">{entry.content}</p>
                   {entry.tags && entry.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {entry.tags.map(tag => (
+                      {entry.tags.map((tag: string) => (
                         <span key={tag} className="font-mono text-[8px] px-1.5 py-0.5"
                           style={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 2, color: "#64748b" }}>
                           {tag}

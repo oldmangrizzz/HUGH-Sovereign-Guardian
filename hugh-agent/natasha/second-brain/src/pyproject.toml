@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "semantic-gravity-memory"
+version = "0.1.0"
+description = "Persistent memory engine for AI agents with gravitational retrieval and 3D brain visualization"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["memory", "agent", "ai", "ollama", "graph", "retrieval"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []  # zero pip deps — pure stdlib + SQLite
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "black", "ruff"]
+
+[project.scripts]
+second-brain = "semantic_gravity_memory.api.server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["semantic_gravity_memory*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100

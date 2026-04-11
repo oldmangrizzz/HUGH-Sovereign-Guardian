@@ -48,24 +48,36 @@ class ProxmoxManager:
         - Host and port configuration
         - SSL verification settings
         - Token-based authentication details
+        - Password-based authentication details
         - Service type specification
 
         Args:
             proxmox_config: Proxmox connection configuration (host, port, SSL settings)
-            auth_config: Authentication configuration (user, token details)
+            auth_config: Authentication configuration (user, token details or password)
 
         Returns:
             Dictionary containing merged configuration ready for API initialization
         """
-        return {
+        config = {
             'host': proxmox_config.host,
             'port': proxmox_config.port,
             'user': auth_config.user,
-            'token_name': auth_config.token_name,
-            'token_value': auth_config.token_value,
             'verify_ssl': proxmox_config.verify_ssl,
             'service': proxmox_config.service
         }
+
+        # Handle authentication method
+        if auth_config.token_name and auth_config.token_value:
+            # Token-based authentication
+            config['token_name'] = auth_config.token_name
+            config['token_value'] = auth_config.token_value
+        elif auth_config.password:
+            # Password-based authentication
+            config['password'] = auth_config.password
+        else:
+            raise ValueError("Invalid authentication configuration: must provide either token credentials or password")
+
+        return config
 
     def _setup_api(self) -> ProxmoxAPI:
         """Initialize and test Proxmox API connection.

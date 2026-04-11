@@ -8,7 +8,13 @@
     "dev:frontend": "vite --open",
     "dev:backend": "convex dev",
     "build": "vite build",
-    "lint": "tsc -p convex -noEmit --pretty false && tsc -p . -noEmit --pretty false && convex dev --once && vite build"
+    "lint": "tsc -p convex -noEmit --pretty false && tsc -p . -noEmit --pretty false && convex dev --once && vite build",
+    "test": "./scripts/run-integration-tests.sh",
+    "test:quick": "./scripts/run-integration-tests.sh --quick",
+    "test:file": "./scripts/run-integration-tests.sh --file",
+    "test:watch": "./scripts/run-integration-tests.sh --watch",
+    "test:coverage": "./scripts/run-integration-tests.sh --coverage",
+    "test:jest": "jest"
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.80",
@@ -33,9 +39,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@jest/globals": "^29.7.0",
+    "@types/jest": "^29.5.12",
     "@types/node": "^22.13.10",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "~10",
     "dotenv": "^16.4.7",
@@ -43,10 +52,12 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
+    "jest": "^29.7.0",
     "npm-run-all": "^4.1.5",
     "postcss": "~8",
     "prettier": "^3.5.3",
     "tailwindcss": "~3",
+    "ts-jest": "^29.1.2",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
     "vite": "^6.2.0"

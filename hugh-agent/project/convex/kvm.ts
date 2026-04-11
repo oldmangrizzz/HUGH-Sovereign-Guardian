@@ -17,6 +17,7 @@
 import { action, internalAction, ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import { requireIdentity, requireAdmin } from "./authHelpers";
 
 type ExecResult = {
   success: boolean;
@@ -28,18 +29,24 @@ type ExecResult = {
   targetNodeId: string;
 };
 
-function classifyZone(cmd: string): "green" | "yellow" | "red" {
+function classifyZone(cmd: string): "green" | "yellow" | "red" | "black" {
   const lower = cmd.trim().toLowerCase();
-  if (/\b(rm\s+-rf|mkfs|dd\s+if|shutdown|reboot|halt|poweroff|fdisk|parted|wipefs|kill\s+-9|pkill|iptables\s+-F|ufw\s+disable)\b/.test(lower)) {
+  // BLACK: Life/system at stake — act immediately, explain after
+  if (/\b(systemctl\s+start\s+(oxygen|ventilator|infusion|defibrillator)|emergency[-_]shutdown|fire[-_]suppress|lockdown[-_]all|evacuate)\b/.test(lower)) {
+    return "black";
+  }
+  // RED: High risk — require explicit confirmation before execution
+  if (/\b(rm\s+-rf|mkfs|dd\s+if|shutdown|reboot|halt|poweroff|fdisk|parted|wipefs|kill\s+-9|pkill|iptables\s+-F|ufw\s+disable|DROP\s+TABLE|DROP\s+DATABASE|format)\b/i.test(lower)) {
     return "red";
   }
+  // YELLOW: Moderate risk — execute + log
   if (/\b(apt|yum|dnf|pip|npm\s+install|systemctl\s+(stop|restart|disable)|chmod|chown|crontab|visudo|passwd|useradd|userdel|groupadd|brew\s+install)\b/.test(lower)) {
     return "yellow";
   }
   return "green";
 }
 
-const sanitizeCmd = (s: string): string => {
+const sanitizeCmd = (s: string, stripPipes = false): string => {
   let out = "";
   const mapping: Record<number, string> = {
     0x0441: "|", 0xFF5C: "|", 0x2502: "|", 0x2503: "|",
@@ -47,14 +54,22 @@ const sanitizeCmd = (s: string): string => {
     0x2018: "'", 0x2019: "'",
     0x201C: '"', 0x201D: '"',
   };
+  // N-02 FIX: Blacklist includes pipe for non-admin callers to prevent data exfiltration
+  const blacklist = ["`", "$", "(", ")", ";", "<", ">", "\\"];
+  if (stripPipes) blacklist.push("|");
 
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i);
     if (mapping[c]) {
-      out += mapping[c];
+      // Unicode pipe variants — block if stripPipes
+      if (stripPipes && (c === 0x0441 || c === 0xFF5C || c === 0x2502 || c === 0x2503)) {
+        out += " ";
+      } else {
+        out += mapping[c];
+      }
     } else if (c >= 0x20 && c <= 0x7E) {
       const char = s[i];
-      if (!["`", "$", "(", ")", ";", "<", ">", "\\"].includes(char)) {
+      if (!blacklist.includes(char)) {
         out += char;
       } else {
         out += " ";
@@ -99,11 +114,44 @@ export const execInternal = internalAction({
     sessionId: v.optional(v.string()),
     notes: v.optional(v.string()),
     targetNodeId: v.optional(v.string()),
+    confirmedRed: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<ExecResult> => {
-    const command = sanitizeCmd(args.command);
+    // N-02: Strip pipes for non-admin callers to prevent data exfiltration
+    const isAdmin = args.issuedBy.startsWith("admin:");
+    const command = sanitizeCmd(args.command, !isAdmin);
     const zone = classifyZone(command);
     const truncate = (s: string) => s.length > 8000 ? s.slice(0, 8000) + "\n[TRUNCATED]" : s;
+
+    // ── DECISION ZONE ENFORCEMENT (per IMPLEMENTATION_BLUEPRINT.md §7.2) ──
+    // RED: High risk — block execution, require explicit confirmation
+    if (zone === "red" && !args.confirmedRed) {
+      await ctx.runMutation(internal.kvmDb.logCommand, {
+        issuedBy: args.issuedBy,
+        sessionId: args.sessionId,
+        command,
+        workingDir: args.workingDir,
+        success: false,
+        zone,
+        errorMessage: "RED ZONE — execution blocked pending confirmation",
+        notes: args.notes,
+        targetNodeId: args.targetNodeId ?? "vps-primary",
+      });
+      return {
+        success: false,
+        stdout: "",
+        stderr: `[RED ZONE BLOCKED] Command "${command}" classified as HIGH RISK. Requires explicit confirmation. EMS Ethics: Do NO harm. Explain tradeoffs first.`,
+        exitCode: -1,
+        durationMs: 0,
+        zone: "red",
+        targetNodeId: args.targetNodeId ?? "vps-primary",
+      };
+    }
+
+    // BLACK: Life/system at stake — execute immediately, explain after
+    if (zone === "black") {
+      console.warn(`[BLACK ZONE EMERGENCY] Executing immediately: ${command} — issued by ${args.issuedBy}`);
+    }
 
     const agent = await resolveAgent(ctx, args.targetNodeId);
 
@@ -201,26 +249,30 @@ export const execInternal = internalAction({
 });
 
 // ── PUBLIC: ADMIN EXEC ────────────────────────────────────────────────────
+// J-03 FIX: Require verified admin identity, not just any auth
 export const adminExec = action({
   args: {
     command: v.string(),
     workingDir: v.optional(v.string()),
     targetNodeId: v.optional(v.string()),
+    confirmedRed: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<ExecResult> => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // NX-06 FIX: Use standardized requireAdmin helper
+    const { email } = await requireAdmin(ctx);
     return await ctx.runAction(internal.kvm.execInternal, {
       command: args.command,
       workingDir: args.workingDir,
-      issuedBy: `admin:${identity.subject}`,
-      notes: "Manual admin execution",
+      issuedBy: `admin:${email}`,
+      notes: args.confirmedRed ? "RED ZONE — admin confirmed" : "Manual admin execution",
       targetNodeId: args.targetNodeId,
+      confirmedRed: args.confirmedRed,
     }) as ExecResult;
   },
 });
 
 // ── PUBLIC: HUGH EXEC ─────────────────────────────────────────────────────
+// J-03 FIX: Reject anonymous sessions — require real authentication
 export const hughExec = action({
   args: {
     command: v.string(),
@@ -230,10 +282,12 @@ export const hughExec = action({
     targetNodeId: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<ExecResult> => {
+    // NX-06 FIX: Use standardized requireIdentity (defeats Anonymous bypass)
+    const { email } = await requireIdentity(ctx);
     return await ctx.runAction(internal.kvm.execInternal, {
       command: args.command,
       workingDir: args.workingDir,
-      issuedBy: "hugh-primary",
+      issuedBy: `hugh:${email}`,
       sessionId: args.sessionId,
       notes: args.notes,
       targetNodeId: args.targetNodeId,
@@ -248,8 +302,8 @@ export const getCommandLog = action({
     targetNodeId: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<unknown[]> => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // NX-06 FIX: Require real email claim (defeats Anonymous bypass)
+    await requireIdentity(ctx);
     return await ctx.runQuery(internal.kvmDb.getRecentLog, {
       limit: args.limit ?? 50,
       targetNodeId: args.targetNodeId,
@@ -261,8 +315,8 @@ export const getCommandLog = action({
 export const getVpsStatus = action({
   args: { targetNodeId: v.optional(v.string()) },
   handler: async (ctx, args): Promise<ExecResult> => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // NX-06 FIX: Require real email claim (defeats Anonymous bypass)
+    await requireIdentity(ctx);
     const target = args.targetNodeId;
     const isMac = target === "macbook-air" || (target?.includes("mac") && !target?.includes("proxmox"));
     const statusCmd = isMac
@@ -293,8 +347,8 @@ export const getVpsStatus = action({
 export const pingAgent = action({
   args: { targetNodeId: v.optional(v.string()) },
   handler: async (ctx, args): Promise<{ online: boolean; nodeId: string; status?: number; error?: string }> => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // NX-06 FIX: Require real email claim (defeats Anonymous bypass)
+    await requireIdentity(ctx);
 
     const agent = await resolveAgent(ctx, args.targetNodeId);
     const nodeId = args.targetNodeId ?? "vps-primary";
@@ -319,8 +373,8 @@ export const pingAgent = action({
 export const pingAllAgents = action({
   args: {},
   handler: async (ctx): Promise<Array<{ online: boolean; nodeId: string; label: string; platform: string; status?: number; error?: string }>> => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // NX-06 FIX: Require real email claim (defeats Anonymous bypass)
+    await requireIdentity(ctx);
 
     const nodes = await ctx.runQuery(internal.agentRegistry.getAllNodes, {}) as Array<{
       nodeId: string; label: string; platform: string; agentUrl: string; status: string;

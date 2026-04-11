@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { Doc } from "../convex/_generated/dataModel";
 import { useState } from "react";
 import VaultPanel from "./VaultPanel";
 import GrowthLogPanel from "./GrowthLogPanel";
@@ -11,7 +12,7 @@ import BrowserPanel from "./BrowserPanel";
 
 const NODE_ID = "hugh-primary";
 
-type AdminTab = "endocrine" | "vault" | "growth" | "mcp" | "standby" | "infra" | "browser" | "export";
+type AdminTab = "endocrine" | "vault" | "growth" | "mcp" | "standby" | "infra" | "browser" | "export" | "display";
 
 const TABS: { id: AdminTab; label: string; color: string }[] = [
   { id: "endocrine", label: "ENDOCRINE",  color: "#10b981" },
@@ -22,13 +23,14 @@ const TABS: { id: AdminTab; label: string; color: string }[] = [
   { id: "infra",     label: "INFRA",      color: "#60a5fa" },
   { id: "browser",   label: "⬡ BROWSER",  color: "#34d399" },
   { id: "export",    label: "⬆ EXPORT",   color: "#10b981" },
+  { id: "display",   label: "⬡ DISPLAY",  color: "#00ff41" },
 ];
 
-export default function AdminDashboard({ onLogout }: { onLogout?: () => void }) {
+export default function AdminDashboard({ onLogout, onKiosk }: { onLogout?: () => void; onKiosk?: () => void }) {
   const [activeTab, setActiveTab] = useState<AdminTab>("endocrine");
   const endocrine  = useQuery(api.endocrine.getAllStates);
   const pheromones = useQuery(api.stigmergy.getAllForNode, { nodeId: NODE_ID });
-  const spike      = useMutation(api.endocrine.spike);
+  const spike      = useMutation(api.endocrine.spikeAuthenticated);
   const initNode   = useMutation(api.endocrine.initNode);
   const [spiking, setSpiking] = useState<string | null>(null);
 
@@ -42,8 +44,8 @@ export default function AdminDashboard({ onLogout }: { onLogout?: () => void }) 
     }
   };
 
-  const primary = endocrine?.find(e => e.nodeId === NODE_ID);
-  const activePheromones = pheromones?.filter(p => !p.evaporated && p.expiresAt > Date.now()) ?? [];
+  const primary = endocrine?.find((e: Doc<"endocrineState">) => e.nodeId === NODE_ID);
+  const activePheromones = pheromones?.filter((p: Doc<"pheromones">) => !p.evaporated && p.expiresAt > Date.now()) ?? [];
 
   return (
     <div className="min-h-screen p-6 workshop-grid" style={{ background: "#080808" }}>
@@ -129,7 +131,7 @@ export default function AdminDashboard({ onLogout }: { onLogout?: () => void }) 
             <div>
               <SectionPanel title="NODE REGISTRY" accent="#94a3b8">
                 <div className="space-y-3">
-                  {endocrine?.map(node => (
+                  {endocrine?.map((node: Doc<"endocrineState">) => (
                     <div key={node._id} className="panel-inset rounded p-3 relative overflow-hidden" style={{ borderRadius: 4 }}>
                       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "#10b981", boxShadow: "0 0 6px #10b981" }} />
                       <div className="flex items-center justify-between mb-2">
@@ -159,7 +161,7 @@ export default function AdminDashboard({ onLogout }: { onLogout?: () => void }) 
                     <p className="font-mono text-[10px] text-workshop-muted text-center py-4">SUBSTRATE CLEAR</p>
                   ) : (
                     <div className="space-y-2">
-                      {activePheromones.slice(0, 6).map(p => {
+                      {activePheromones.slice(0, 6).map((p: Doc<"pheromones">) => {
                         const zoneColor: Record<string, string> = { green: "#10b981", yellow: "#f59e0b", red: "#ef4444", black: "#64748b" };
                         const c = zoneColor[p.zone] ?? "#64748b";
                         return (
@@ -219,6 +221,44 @@ export default function AdminDashboard({ onLogout }: { onLogout?: () => void }) 
         {activeTab === "export" && (
           <SectionPanel title="EXPORT TO GITHUB → VPS" accent="#10b981">
             <ExportPanel />
+          </SectionPanel>
+        )}
+
+        {activeTab === "display" && (
+          <SectionPanel title="DISPLAY CONTROL — 5K KIOSK" accent="#00ff41">
+            <div className="space-y-6">
+              <p className="font-mono text-[10px] text-workshop-muted">
+                Launch the full-screen kiosk view for the Proxmox iMac (27" 5K display).
+                Camera feeds, neural field, and ARC competition viewer.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={onKiosk}
+                  className="btn-forge py-4 text-[11px] tracking-widest"
+                  style={{ borderRadius: 4, border: "1px solid #00ff41", color: "#00ff41", background: "#00ff4115", boxShadow: "0 0 14px #00ff4130" }}
+                >
+                  ⬡ ENTER KIOSK DISPLAY
+                </button>
+                <StatTile label="DEPLOY COMMAND" value="./deploy-kiosk.sh" color="#00ff41" />
+              </div>
+              <div className="space-y-2">
+                {[
+                  { mode: "AWAKE",       desc: "Neural field + cameras + telemetry",        color: "#00ff41" },
+                  { mode: "SLEEP",       desc: "Dim breathing field, WAKE button",           color: "#003300" },
+                  { mode: "COMPETITION", desc: "Full-screen ARC viewer (neural bg at 12%)", color: "#00ff41" },
+                  { mode: "DEEP",        desc: "Violet Clifford attractor",                  color: "#a78bfa" },
+                  { mode: "FORGE",       desc: "Gold Clifford attractor",                    color: "#fbbf24" },
+                ].map(m => (
+                  <div key={m.mode} className="panel-inset relative overflow-hidden" style={{ borderRadius: 4, padding: "10px 14px" }}>
+                    <div className="absolute top-0 left-0 right-0 h-px" style={{ background: m.color }} />
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-[10px] font-bold w-24" style={{ color: m.color }}>{m.mode}</span>
+                      <span className="font-mono text-[9px] text-workshop-muted">{m.desc}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </SectionPanel>
         )}
 

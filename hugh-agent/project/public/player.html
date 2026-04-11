@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>H.U.G.H.</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000;
+      font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
+      -webkit-user-select: none; user-select: none;
+    }
+    #stream {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; z-index: 1; background: #000;
+    }
+    #env {
+      position: fixed; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse at 50% 55%, #0c1a0c 0%, #060c06 45%, #000 100%);
+    }
+    #veil {
+      position: fixed; inset: 0; z-index: 200; background: #000;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: default; transition: opacity 1.2s ease;
+    }
+    #veil.ready { cursor: pointer; }
+    #veil.crossed { opacity: 0; pointer-events: none; }
+    #veil h1 {
+      font-size: 2.4em; letter-spacing: 10px; color: #00ff41; font-weight: 200;
+      text-shadow: 0 0 60px rgba(0,255,65,0.15), 0 0 120px rgba(0,255,65,0.05);
+    }
+    #veil .sub {
+      color: #1a1a1a; font-size: 0.65em; letter-spacing: 4px;
+      text-transform: uppercase; margin-top: 8px; transition: color 1s;
+    }
+    #veil.ready .sub { color: #333; }
+    .pulse-ring {
+      width: 48px; height: 48px; border-radius: 50%; margin-top: 48px;
+      border: 1px solid rgba(0,255,65,0.15);
+      animation: veilPulse 3s ease-in-out infinite;
+    }
+    #veil.ready .pulse-ring { border-color: rgba(0,255,65,0.3); cursor: pointer; }
+    @keyframes veilPulse {
+      0%, 100% { transform: scale(1); opacity: 0.4; }
+      50% { transform: scale(1.15); opacity: 0.8; }
+    }
+    #veil .enter {
+      margin-top: 32px; font-size: 0.75em; letter-spacing: 3px;
+      color: rgba(0,255,65,0); transition: color 0.8s;
+    }
+    #veil.ready .enter { color: rgba(0,255,65,0.35); }
+    /* ── Edge HUD — ambient state glow around viewport perimeter ── */
+    #edge {
+      position: fixed; inset: 0; z-index: 45; pointer-events: none;
+      opacity: 0; transition: opacity 0.8s ease;
+    }
+    #edge.on { opacity: 1; }
+    #edge::before {
+      content: ''; position: absolute; inset: 0;
+      border: 2px solid transparent; border-radius: 0;
+      transition: border-color 0.6s ease, box-shadow 0.6s ease;
+    }
+    #edge.listening::before {
+      border-color: rgba(0,255,65,0.12);
+      box-shadow: inset 0 0 40px rgba(0,255,65,0.04), inset 0 0 80px rgba(0,255,65,0.02);
+      animation: edgeBreathe 4s ease-in-out infinite;
+    }
+    #edge.hearing::before {
+      border-color: rgba(0,255,65,0.35);
+      box-shadow: inset 0 0 60px rgba(0,255,65,0.08), inset 0 0 120px rgba(0,255,65,0.04);
+      animation: none;
+    }
+    #edge.thinking::before {
+      border-color: rgba(255,170,0,0.25);
+      box-shadow: inset 0 0 50px rgba(255,170,0,0.06), inset 0 0 100px rgba(255,170,0,0.03);
+      animation: edgeThink 1.8s ease-in-out infinite;
+    }
+    #edge.speaking::before {
+      border-color: rgba(100,175,255,0.25);
+      box-shadow: inset 0 0 50px rgba(100,175,255,0.06), inset 0 0 100px rgba(100,175,255,0.03);
+      animation: edgeSpeak 1s ease-in-out infinite;
+    }
+    #edge.muted::before {
+      border-color: rgba(255,255,255,0.03);
+      box-shadow: none; animation: none;
+    }
+    @keyframes edgeBreathe {
+      0%, 100% { border-color: rgba(0,255,65,0.08); box-shadow: inset 0 0 30px rgba(0,255,65,0.02); }
+      50% { border-color: rgba(0,255,65,0.18); box-shadow: inset 0 0 60px rgba(0,255,65,0.06); }
+    }
+    @keyframes edgeThink {
+      0%, 100% { border-color: rgba(255,170,0,0.12); }
+      50% { border-color: rgba(255,170,0,0.3); }
+    }
+    @keyframes edgeSpeak {
+      0%, 100% { border-color: rgba(100,175,255,0.15); box-shadow: inset 0 0 40px rgba(100,175,255,0.04); }
+      50% { border-color: rgba(100,175,255,0.3); box-shadow: inset 0 0 70px rgba(100,175,255,0.08); }
+    }
+
+    /* ── Mic touch target — removed. HUGH is the room. Tap screen to interrupt. ── */
+    #subs {
+      position: fixed; bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+      left: 50%; transform: translateX(-50%); z-index: 40;
+      width: 80vw; max-width: 640px; text-align: center;
+      pointer-events: none; transition: opacity 0.6s ease;
+    }
+    #subs.off { opacity: 0; }
+    .si { color: rgba(255,255,255,0.2); font-style: italic; font-size: 0.88em; }
+    .sy { color: rgba(255,255,255,0.35); font-size: 0.82em; margin-bottom: 6px; }
+    .sh { color: rgba(255,255,255,0.85); font-size: 1.05em; line-height: 1.55;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.95); }
+    .se { color: rgba(255,100,100,0.45); font-size: 0.82em; }
+    #tbar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+      padding: 16px 24px calc(16px + env(safe-area-inset-bottom, 0px));
+      background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,0.04);
+      transform: translateY(100%); transition: transform 0.3s ease;
+    }
+    #tbar.open { transform: translateY(0); }
+    #tbar input {
+      width: 100%; background: none; border: none; outline: none;
+      color: rgba(255,255,255,0.8); font-size: 1em; font-family: inherit;
+      -webkit-user-select: text; user-select: text;
+    }
+    #tbar input::placeholder { color: rgba(255,255,255,0.12); }
+    #tbar .esc {
+      position: absolute; right: 24px; top: 50%; transform: translateY(-50%);
+      color: rgba(255,255,255,0.08); font-size: 0.65em; letter-spacing: 1px;
+    }
+    #kb {
+      position: fixed; bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+      right: 14px; z-index: 55;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: none; border: 1px solid rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.12); font-size: 0.6em;
+      cursor: pointer; transition: all 0.3s;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+    }
+    #kb.on { opacity: 1; pointer-events: auto; }
+    #kb:hover { border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.25); }
+    #hp {
+      position: fixed; top: 14px; right: 14px; z-index: 50;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #222; transition: all 0.6s;
+    }
+    #hp.g { background: #00ff41; box-shadow: 0 0 3px rgba(0,255,65,0.35); }
+    #hp.y { background: #ffaa00; box-shadow: 0 0 3px rgba(255,170,0,0.35); }
+    #hp.r { background: #ff4444; box-shadow: 0 0 3px rgba(255,68,68,0.35); }
+  </style>
+</head>
+<body>
+  <div id="env"></div>
+  <video id="stream" autoplay playsinline muted></video>
+  <div id="veil">
+    <h1>H.U.G.H.</h1>
+    <div class="sub">The Workshop</div>
+    <div class="pulse-ring"></div>
+    <div class="enter">step through</div>
+  </div>
+  <div id="subs" class="off"></div>
+  <div id="edge"></div>
+  <div id="tbar"><input id="tin" type="text" placeholder="speak to H.U.G.H..." autocomplete="off" /><span class="esc">ESC</span></div>
+  <button id="kb" title="Type">&#9000;</button>
+  <div id="hp"></div>
+<script>
+(function() {
+  'use strict';
+  var GW   = 'https://api.grizzlymedicine.icu';
+  var GWWS = (location.protocol === 'https:' ? 'wss:' : 'ws:') + '//api.grizzlymedicine.icu/ws/audio';
+  var KEY  = null; // V-01 FIX: No hardcoded token — fetched as ephemeral per-session
+  var SIG  = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+  var SID  = 'veil_' + Math.random().toString(36).substr(2, 8) + '_' + Date.now();
+  var CAN_ASR = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+  var gw = null, gwOk = false;
+  var sigWs = null, pc = null, ice = [];
+  var rec = null, mic = null;
+  var voice = false, busy = false, talking = false;
+  var crossed = false;
+
+  var elS   = document.getElementById('stream');
+  var elV   = document.getElementById('veil');
+  var elEdge = document.getElementById('edge');
+  var elSub = document.getElementById('subs');
+  var elTB  = document.getElementById('tbar');
+  var elTin = document.getElementById('tin');
+  var elKB  = document.getElementById('kb');
+  var elHP  = document.getElementById('hp');
+
+  gwConnect();
+  psConnect();
+  hpCheck();
+  setInterval(hpCheck, 15000);
+  setTimeout(function() { if (!crossed) elV.classList.add('ready'); }, 4000);
+
+  elV.addEventListener('click', cross);
+  elV.addEventListener('touchend', function(e) { e.preventDefault(); cross(); });
+
+  function cross() {
+    if (!elV.classList.contains('ready')) return;
+    if (crossed) return;
+    crossed = true;
+    elV.classList.add('crossed');
+    setTimeout(function() { elV.style.display = 'none'; }, 1200);
+    elEdge.classList.add('on');
+    elKB.classList.add('on');
+    if (CAN_ASR) { voiceStart(); } else { setEdge('muted'); textShow(); }
+  }
+
+  function gwConnect() {
+    // V-01: Fetch ephemeral token before connecting
+    // N-06: Also receive ICE server config (TURN creds) from gateway
+    fetch(GW + '/ws/token', { method: 'POST' })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (!d.token) throw new Error('No token');
+        KEY = d.token;
+        if (d.iceServers) pcCfg = { iceServers: d.iceServers };
+        gwConnectWithToken(KEY);
+      })
+      .catch(function() {
+        // Retry after delay
+        setTimeout(gwConnect, 5000);
+      });
+  }
+  function gwConnectWithToken(token) {
+    gw = new WebSocket(GWWS + '?token=' + token);
+    gw.onopen = function() {
+      var wasDown = !gwOk; gwOk = true;
+      gwSend({ type: 'config', speakerName: 'Workshop', sessionId: SID });
+      elV.classList.add('ready');
+      if (wasDown && crossed) showSub('se', 'Reconnected.');
+    };
+    gw.onmessage = function(ev) {
+      var m; try { m = JSON.parse(ev.data); } catch(e) { return; }
+      if (m.type === 'response') onReply(m.text);
+      else if (m.type === 'audio') feedAudio(m.data);
+      else if (m.type === 'audio_done') onAudioDone();
+      else if (m.type === 'audio_error') ttsFallback(lastReply);
+      else if (m.type === 'state') {
+        if (m.state === 'processing') setEdge('thinking');
+        else if (m.state === 'speaking') { talking = true; setEdge('speaking'); initAudio(); if (rec) try { rec.stop(); } catch(e) {} }
+        else if (m.state === 'listening' && !talking && !busy) setEdge(voice ? 'listening' : 'muted');
+      }
+      else if (m.type === 'error') { busy = false; showSub('se', m.message); setEdge(voice ? 'listening' : 'muted'); }
+    };
+    gw.onclose = function() {
+      var wasOk = gwOk; gwOk = false;
+      if (wasOk && crossed) showSub('se', 'Connection lost — reconnecting\u2026');
+      setTimeout(gwConnect, 3000); // Re-fetches a new ephemeral token
+    };
+    gw.onerror = function() {};
+  }
+  function gwSend(o) { if (gw && gw.readyState === 1) gw.send(JSON.stringify(o)); }
+
+  function sendHugh(text) {
+    if (!text || !text.trim() || busy) return;
+    busy = true;
+    setEdge('thinking');
+    showSub('sy', text);
+    gwSend({ type: 'text', text: text.trim() });
+    // Timeout indicator if HUGH takes too long
+    clearTimeout(thinkTimer);
+    thinkTimer = setTimeout(function() { if (busy) showSub('se', 'Still thinking\u2026'); }, 20000);
+  }
+  var thinkTimer = null;
+  var lastReply = '';
+  function onReply(text) {
+    clearTimeout(thinkTimer);
+    lastReply = text;
+    showSub('sh', text);
+  }
+
+  // N-06 FIX: ICE config fetched from gateway, not hardcoded
+  var pcCfg = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+  function psConnect() {
+    sigWs = new WebSocket(SIG);
+    sigWs.onopen = function() { sigWs.send(JSON.stringify({ type: 'listStreamers' })); };
+    sigWs.onmessage = function(ev) { psSig(JSON.parse(ev.data)); };
+    sigWs.onerror = function() {};
+    sigWs.onclose = function() { setTimeout(psConnect, 5000); };
+  }
+  function psSig(m) {
+    if (m.type === 'streamerList') {
+      if ((m.ids || []).length) sigWs.send(JSON.stringify({ type: 'subscribe', streamerId: m.ids[0] }));
+    } else if (m.type === 'config') {
+      var o = m.peerConnectionOptions;
+      if (typeof o === 'string') try { o = JSON.parse(o); } catch(e) {}
+      if (o && o.iceServers) pcCfg.iceServers = o.iceServers;
+    } else if (m.type === 'offer') {
+      psOffer(m);
+    } else if (m.type === 'iceCandidate') {
+      var c = m.candidate;
+      if (typeof c === 'string') try { c = JSON.parse(c); } catch(e) {}
+      if (c && pc && pc.remoteDescription) pc.addIceCandidate(new RTCIceCandidate(c)).catch(function(){});
+      else if (c) ice.push(c);
+    }
+  }
+  function psOffer(m) {
+    if (pc) pc.close();
+    pc = new RTCPeerConnection(pcCfg);
+    pc.ontrack = function(ev) { elS.srcObject = ev.streams[0]; };
+    pc.onicecandidate = function(ev) {
+      if (ev.candidate) sigWs.send(JSON.stringify({ type: 'iceCandidate', candidate: ev.candidate }));
+    };
+    pc.ondatachannel = function(ev) {
+      ev.channel.onmessage = function(e) { try { JSON.parse(e.data); } catch(x) {} };
+    };
+    pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: m.sdp }))
+      .then(function() { return pc.createAnswer(); })
+      .then(function(a) {
+        pc.setLocalDescription(a);
+        sigWs.send(JSON.stringify({ type: 'answer', sdp: a.sdp }));
+        ice.forEach(function(c) { pc.addIceCandidate(new RTCIceCandidate(c)).catch(function(){}); });
+        ice = [];
+      })
+      .catch(function(e) { console.error('[PS]', e); });
+  }
+
+  function voiceStart() {
+    if (!CAN_ASR) return;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+      .then(function(stream) {
+        mic = stream;
+        voice = true;
+        setEdge('listening');
+        rec = new SR();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.lang = 'en-US';
+        rec.onresult = function(ev) {
+          if (busy || talking) return;
+          var last = ev.results[ev.results.length - 1];
+          if (last.isFinal) {
+            var t = last[0].transcript.trim();
+            if (t.length > 1) sendHugh(t);
+          } else {
+            var interim = last[0].transcript.trim();
+            if (interim) { setEdge('hearing'); showSub('si', interim); }
+          }
+        };
+        rec.onend = function() { if (voice && !talking) try { rec.start(); } catch(e) {} };
+        rec.onerror = function(e) { if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('[ASR]', e.error); };
+        rec.start();
+      })
+      .catch(function() {
+        showSub('se', 'Microphone needed for voice.');
+        setEdge('muted');
+        textShow();
+      });
+  }
+  function voiceStop() {
+    voice = false;
+    if (rec) { try { rec.stop(); } catch(e) {} rec = null; }
+    if (mic) { mic.getTracks().forEach(function(t) { t.stop(); }); mic = null; }
+    setEdge('muted');
+  }
+
+  /* ── Streaming audio playback (Pocket TTS via gateway) ── */
+  var audioCtx = null, masterGain = null, nextPlayTime = 0;
+  var wavParsed = false, wavBuf = new Uint8Array(0), wavRate = 24000;
+
+  function initAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (masterGain) masterGain.disconnect();
+    masterGain = audioCtx.createGain();
+    masterGain.connect(audioCtx.destination);
+    nextPlayTime = 0;
+    wavParsed = false;
+    wavBuf = new Uint8Array(0);
+  }
+
+  function feedAudio(b64) {
+    var raw = atob(b64);
+    var bytes = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+    var combined = new Uint8Array(wavBuf.length + bytes.length);
+    combined.set(wavBuf);
+    combined.set(bytes, wavBuf.length);
+    wavBuf = combined;
+    if (!wavParsed && wavBuf.length >= 44) {
+      var view = new DataView(wavBuf.buffer);
+      wavRate = view.getUint32(24, true);
+      wavParsed = true;
+      wavBuf = wavBuf.slice(44);
+    }
+    if (!wavParsed) return;
+    var chunkSamples = Math.floor(wavRate / 5);
+    var chunkBytes = chunkSamples * 2;
+    while (wavBuf.length >= chunkBytes) {
+      scheduleChunk(wavBuf.slice(0, chunkBytes));
+      wavBuf = wavBuf.slice(chunkBytes);
+    }
+  }
+
+  function scheduleChunk(pcm) {
+    if (!audioCtx || !masterGain) return;
+    var samples = pcm.length / 2;
+    var buffer = audioCtx.createBuffer(1, samples, wavRate);
+    var ch = buffer.getChannelData(0);
+    var view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength);
+    for (var i = 0; i < samples; i++) ch[i] = view.getInt16(i * 2, true) / 32768.0;
+    var source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(masterGain);
+    var now = audioCtx.currentTime;
+    if (nextPlayTime < now) nextPlayTime = now;
+    source.start(nextPlayTime);
+    nextPlayTime += buffer.duration;
+  }
+
+  function onAudioDone() {
+    if (wavBuf.length >= 2) {
+      var remain = wavBuf.slice(0, wavBuf.length - (wavBuf.length % 2));
+      if (remain.length > 0) scheduleChunk(remain);
+      wavBuf = new Uint8Array(0);
+    }
+    var remaining = audioCtx ? Math.max(0, (nextPlayTime - audioCtx.currentTime) * 1000) : 0;
+    setTimeout(function() {
+      talking = false;
+      busy = false;
+      setEdge(voice ? 'listening' : 'muted');
+      if (voice) setTimeout(function() { if (voice && rec) try { rec.start(); } catch(e) {} }, 400);
+      setTimeout(function() { if (!busy && !talking) elSub.classList.add('off'); }, 4000);
+    }, remaining + 100);
+  }
+
+  function stopAudio() {
+    if (masterGain) { masterGain.disconnect(); masterGain = audioCtx.createGain(); masterGain.connect(audioCtx.destination); }
+    nextPlayTime = 0;
+    wavParsed = false;
+    wavBuf = new Uint8Array(0);
+    talking = false;
+    busy = false;
+  }
+
+  /* Browser TTS fallback — used only if Pocket TTS fails */
+  function ttsFallback(text) {
+    if (!window.speechSynthesis || !text) {
+      talking = false; busy = false;
+      setEdge(voice ? 'listening' : 'muted');
+      if (voice) setTimeout(function() { if (voice && rec) try { rec.start(); } catch(e) {} }, 400);
+      return;
+    }
+    talking = true;
+    setEdge('speaking');
+    if (rec) try { rec.stop(); } catch(e) {}
+    var u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.95; u.pitch = 0.9;
+    u.onend = function() {
+      talking = false; busy = false;
+      setEdge(voice ? 'listening' : 'muted');
+      if (voice) setTimeout(function() { if (voice && rec) try { rec.start(); } catch(e) {} }, 400);
+      setTimeout(function() { if (!busy && !talking) elSub.classList.add('off'); }, 4000);
+    };
+    u.onerror = function() {
+      talking = false; busy = false;
+      setEdge(voice ? 'listening' : 'muted');
+      if (voice) setTimeout(function() { if (voice && rec) try { rec.start(); } catch(e) {} }, 200);
+    };
+    speechSynthesis.speak(u);
+  }
+
+  function setEdge(state) {
+    elEdge.className = state + ' on';
+  }
+
+  /* Tap the world to interrupt HUGH speaking (barge-in) */
+  document.addEventListener('click', function(e) {
+    if (!crossed) return;
+    if (e.target === elTin || e.target === elKB || elTB.contains(e.target)) return;
+    if (talking) {
+      stopAudio();
+      if (window.speechSynthesis) speechSynthesis.cancel();
+      if (voice) {
+        setEdge('listening');
+        setTimeout(function() { if (voice && rec) try { rec.start(); } catch(e) {} }, 200);
+      }
+    }
+  });
+
+  var subT = null;
+  function showSub(cls, text) {
+    clearTimeout(subT);
+    elSub.classList.remove('off');
+    var safe = esc(text);
+    if (cls === 'sh') {
+      var prev = elSub.querySelector('.sy');
+      elSub.innerHTML = (prev ? prev.outerHTML : '') + '<div class="sh">' + safe + '</div>';
+    } else {
+      elSub.innerHTML = '<div class="' + cls + '">' + safe + '</div>';
+    }
+    subT = setTimeout(function() { if (!busy && !talking) elSub.classList.add('off'); }, 8000);
+  }
+  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  function textShow() { elTB.classList.add('open'); elTin.focus(); }
+  function textHide() { elTB.classList.remove('open'); elTin.blur(); }
+  document.addEventListener('keydown', function(e) {
+    if (e.target === elTin) {
+      if (e.key === 'Escape') textHide();
+      else if (e.key === 'Enter') { var t = elTin.value.trim(); if (t) sendHugh(t); elTin.value = ''; textHide(); }
+      return;
+    }
+    if (!crossed) return;
+    if ((e.key === '/' || e.key === 't' || e.key === 'T') && !elTB.classList.contains('open')) { e.preventDefault(); textShow(); }
+  });
+  elKB.addEventListener('click', function() { if (elTB.classList.contains('open')) textHide(); else textShow(); });
+
+  function hpCheck() {
+    fetch(GW + '/health').then(function(r) { return r.json(); }).then(function(d) {
+      elHP.className = d.status === 'online' ? 'g' : 'y';
+    }).catch(function() { elHP.className = 'r'; });
+  }
+})();
+</script>
+</body>
+</html>

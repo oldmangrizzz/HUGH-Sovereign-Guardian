@@ -3,7 +3,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
+import { Doc, Id } from "../convex/_generated/dataModel";
 
 // ── TYPES ──────────────────────────────────────────────────────────────────
 
@@ -151,7 +151,7 @@ export default function TacticalMap() {
   useEffect(() => {
     if (!mapReady || !mapRef.current || !waypoints) return;
     const map = mapRef.current;
-    const currentIds = new Set(waypoints.map(w => w._id));
+    const currentIds = new Set(waypoints.map((w: Doc<"mapWaypoints">) => w._id));
 
     // Remove stale markers
     markersRef.current.forEach((marker, id) => {
@@ -162,7 +162,7 @@ export default function TacticalMap() {
     });
 
     // Add/update markers
-    waypoints.forEach(wp => {
+    waypoints.forEach((wp: Doc<"mapWaypoints">) => {
       if (markersRef.current.has(wp._id)) return;
       const color = WAYPOINT_COLORS[wp.waypointType as WaypointType] ?? "#34d399";
       const icon  = WAYPOINT_ICONS[wp.waypointType as WaypointType] ?? "◈";
@@ -214,7 +214,7 @@ export default function TacticalMap() {
     if (!mapReady || !mapRef.current || !tracks) return;
     const map = mapRef.current;
 
-    tracks.forEach(track => {
+    tracks.forEach((track: Doc<"mapTracks">) => {
       const sourceId = `track-${track._id}`;
       const layerId  = `track-line-${track._id}`;
       let points: Array<{ lat: number; lng: number }> = [];
@@ -254,7 +254,7 @@ export default function TacticalMap() {
     if (!mapReady || !mapRef.current || !feeds) return;
     const map = mapRef.current;
 
-    feeds.forEach(feed => {
+    feeds.forEach((feed: Doc<"osintFeeds">) => {
       if (!feed.enabled || !feed.cachedDataJson) return;
       const sourceId = `osint-${feed._id}`;
       const layerId  = `osint-circles-${feed._id}`;
@@ -458,7 +458,7 @@ export default function TacticalMap() {
           <span className="text-workshop-chrome">{tracks?.length ?? 0}</span>
           <span className="text-workshop-dim">|</span>
           <span className="text-workshop-silver">OSINT</span>
-          <span className="text-workshop-chrome">{feeds?.filter(f => f.enabled).length ?? 0}</span>
+          <span className="text-workshop-chrome">{feeds?.filter((f: Doc<"osintFeeds">) => f.enabled).length ?? 0}</span>
         </div>
       </div>
 
@@ -580,7 +580,7 @@ export default function TacticalMap() {
                     No waypoints. Click map to place.
                   </p>
                 )}
-                {(waypoints ?? []).map(wp => (
+                {(waypoints ?? []).map((wp: Doc<"mapWaypoints">) => (
                   <div
                     key={wp._id}
                     className={`flex items-start gap-2 p-2.5 rounded cursor-pointer transition-all ${
@@ -616,7 +616,7 @@ export default function TacticalMap() {
             {/* ── OSINT PANEL ── */}
             {sidePanel === "osint" && (
               <div className="p-3 space-y-2">
-                {(feeds ?? []).map(feed => (
+                {(feeds ?? []).map((feed: Doc<"osintFeeds">) => (
                   <div
                     key={feed._id}
                     className="p-2.5 rounded"
@@ -687,7 +687,7 @@ export default function TacticalMap() {
                     No tracks. Use GPS controls to record.
                   </p>
                 )}
-                {(tracks ?? []).map(track => {
+                {(tracks ?? []).map((track: Doc<"mapTracks">) => {
                   let pts = 0;
                   try { pts = JSON.parse(track.pointsJson).length; } catch (_) { /* */ }
                   return (

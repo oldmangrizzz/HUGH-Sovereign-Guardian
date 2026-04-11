@@ -2,15 +2,16 @@
 /**
  * livekit.ts — LiveKit room management for H.U.G.H.
  *
- * Required env vars:
- *   LIVEKIT_URL        — wss://tonyai-yqw0fr0p.livekit.cloud
- *   LIVEKIT_API_KEY    — APIHsYnMUCy2jhz
- *   LIVEKIT_API_SECRET — 1IJFXjoEWqyZp1TnkZAHE8J83QRbeEOTdkzdmRIcVOF
+ * Required env vars (set via `npx convex env set`):
+ *   LIVEKIT_URL        — LiveKit cloud/self-hosted URL
+ *   LIVEKIT_API_KEY    — API key from LiveKit dashboard
+ *   LIVEKIT_API_SECRET — API secret from LiveKit dashboard
  */
 
 import { action, internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
+import { requireIdentity, requireAdmin } from "./authHelpers";
 
 function getRoomService() {
   const url = process.env.LIVEKIT_URL;
@@ -34,6 +35,9 @@ export const generateToken = action({
     ttlSeconds: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // NX-07 FIX: Require authenticated identity with email claim
+    await requireIdentity(ctx);
+
     const apiKey = process.env.LIVEKIT_API_KEY;
     const apiSecret = process.env.LIVEKIT_API_SECRET;
     if (!apiKey || !apiSecret) {
@@ -60,8 +64,8 @@ export const generateToken = action({
 export const listRooms = action({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // NX-06 FIX: Require real email claim (defeats Anonymous bypass)
+    await requireIdentity(ctx);
     const svc = getRoomService();
     const rooms = await svc.listRooms();
     return rooms.map((r) => ({
@@ -79,8 +83,8 @@ export const listRooms = action({
 export const listParticipants = action({
   args: { roomName: v.string() },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // NX-06 FIX: Require real email claim (defeats Anonymous bypass)
+    await requireIdentity(ctx);
     const svc = getRoomService();
     const participants = await svc.listParticipants(args.roomName);
     return participants.map((p) => ({
@@ -101,8 +105,8 @@ export const ensureRoom = action({
     metadata: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // NX-06 FIX: Require real email claim (defeats Anonymous bypass)
+    await requireIdentity(ctx);
     const svc = getRoomService();
     const room = await svc.createRoom({
       name: args.roomName,
@@ -121,8 +125,8 @@ export const ensureRoom = action({
 export const deleteRoom = action({
   args: { roomName: v.string() },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // NX-06 FIX: Require real email claim (defeats Anonymous bypass)
+    await requireIdentity(ctx);
     const svc = getRoomService();
     await svc.deleteRoom(args.roomName);
     return { deleted: true };
@@ -133,8 +137,8 @@ export const deleteRoom = action({
 export const removeParticipant = action({
   args: { roomName: v.string(), participantIdentity: v.string() },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+    // NX-06 FIX: Require real email claim (defeats Anonymous bypass)
+    await requireIdentity(ctx);
     const svc = getRoomService();
     await svc.removeParticipant(args.roomName, args.participantIdentity);
     return { removed: true };

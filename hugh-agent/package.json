@@ -1,0 +1,26 @@
+{
+  "name": "hugh-agent",
+  "version": "1.0.0",
+  "description": "H.U.G.H. Holographic Satellite Node - HTTP Execution Bridge",
+  "main": "src/server.js",
+  "bin": {
+    "hugh-agent": "bin/hugh-agent.js"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "hugh",
+    "agent",
+    "bridge",
+    "kvm"
+  ],
+  "author": "Grizzly Medicine Lab",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1"
+  }
+}

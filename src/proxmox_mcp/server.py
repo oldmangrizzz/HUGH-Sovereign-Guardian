@@ -20,8 +20,7 @@ import sys
 import signal
 from typing import Optional, List, Annotated, Literal
 
-from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.tools import Tool
+from mcp.server import MCPServer
 from mcp.types import TextContent as Content
 from pydantic import Field, BaseModel
 from fastapi import Body
@@ -101,7 +100,7 @@ class ProxmoxMCPServer:
         self.backup_tools = BackupTools(self.proxmox)
 
         # Initialize MCP server
-        self.mcp = FastMCP("ProxmoxMCP")
+        self.mcp = MCPServer("ProxmoxMCP")
         self._setup_tools()
 
     def _setup_tools(self) -> None:

@@ -23,13 +23,91 @@ const applicationTables = {
   // ── ENDOCRINE STATE ────────────────────────────────────────────────────────
   endocrineState: defineTable({
     nodeId: v.string(),
+
+    // Sympathetic (existing)
     cortisol: v.number(),
     dopamine: v.number(),
     adrenaline: v.number(),
+
+    // Parasympathetic (NEW)
+    serotonin: v.number(),          // stability, baseline 0.3
+    oxytocin: v.number(),           // social bonding, baseline 0.1
+    vagalTone: v.number(),          // computed brake, 0-1
+
+    // Homeostasis (NEW)
+    allostaticLoad: v.number(),     // cumulative stress cost, 0-1
+    baselineCortisol: v.number(),   // adaptive, default 0.2
+    baselineDopamine: v.number(),   // adaptive, default 0.2
+    baselineAdrenaline: v.number(), // adaptive, default 0.15
+    baselineSerotonin: v.number(),  // adaptive, default 0.3
+    baselineOxytocin: v.number(),   // adaptive, default 0.1
+    consecutiveHighStressCycles: v.number(),
+    consecutiveCalmCycles: v.number(),
+
+    // Fatigue (NEW)
+    fatigue: v.number(),            // 0-1
+    tokensGeneratedThisCycle: v.number(),
+    consecutiveComplexTasks: v.number(),
+    lastRestCompletedAt: v.number(),
+
+    // Drive (NEW)
+    curiosity: v.number(),          // 0-1, baseline 0.15
+
+    // Respiratory Rhythm (RSA)
+    respiratoryRate: v.optional(v.number()),     // cycles per hour
+    respiratoryPhase: v.optional(v.string()),    // "inhale" | "hold" | "exhale"
+    co2Pressure: v.optional(v.number()),         // 0-1, builds during hold, drives exhale
+    breathHoldDuration: v.optional(v.number()),  // ms in processing without output
+
+    // Cardiac Conduction System (CCS)
+    saNodeRate: v.optional(v.number()),          // bpm (pulses per minute)
+    avNodeDelay: v.optional(v.number()),         // ms delay between signal and pulse
+    bundleBranchConductivity: v.optional(v.number()), // 0-1 efficiency
+    purkinjeFiberIntensity: v.optional(v.number()),
+
+    // Timing
     lastPulse: v.number(),
+    lastSpikeTimestamp: v.number(), // NEW: tracks when last sympathetic spike occurred
     holographicMode: v.boolean(),
   })
     .index("by_node", ["nodeId"]),
+
+  // ── CIRCADIAN STATE ────────────────────────────────────────────────────────
+  circadianState: defineTable({
+    nodeId: v.string(),
+    phase: v.string(),             // "active" | "consolidation" | "maintenance"
+    cycleStartedAt: v.number(),
+    cycleDurationMs: v.number(),   // default 14400000 (4 hours)
+    phaseEnteredAt: v.number(),
+    interruptionCount: v.number(),
+    overrideUntil: v.optional(v.number()), // interrupt for urgent stimulus
+  })
+    .index("by_node", ["nodeId"]),
+
+  // ── IMMUNE LOG ─────────────────────────────────────────────────────────────
+  immuneLog: defineTable({
+    nodeId: v.string(),
+    threatType: v.string(),     // "drift" | "tampering" | "failure" | "corruption"
+    severity: v.number(),       // 0-1
+    description: v.string(),
+    detectedAt: v.number(),
+    resolvedAt: v.optional(v.number()),
+    resolution: v.optional(v.string()),
+  })
+    .index("by_node", ["nodeId"])
+    .index("by_severity", ["severity"]),
+
+  // ── PAIN MEMORY ────────────────────────────────────────────────────────────
+  painMemory: defineTable({
+    nodeId: v.string(),
+    source: v.string(),           // what caused pain
+    grade: v.string(),            // discomfort|pain|acute|agony
+    occurrences: v.number(),      // how many times
+    lastOccurred: v.number(),
+    cnsInhibitWeight: v.number(), // how strongly this is avoided
+    decayRate: v.number(),        // how slowly the avoidance fades
+  })
+    .index("by_node_and_source", ["nodeId", "source"]),
 
   // ── EPISODIC MEMORY ────────────────────────────────────────────────────────
   episodicMemory: defineTable({
@@ -240,6 +318,10 @@ const applicationTables = {
     alertsJson: v.string(),
     entitiesJson: v.string(),
     cameraJson: v.string(),
+    isAttentive: v.optional(v.boolean()),
+    lastWakeWordTs: v.optional(v.number()),
+    semanticCount: v.optional(v.number()),
+    episodicCount: v.optional(v.number()),
     updatedAt: v.number(),
   })
     .index("by_key", ["key"]),
@@ -256,7 +338,7 @@ const applicationTables = {
     .index("by_room", ["roomName"])
     .index("by_status", ["status"]),
 
-  // ── TRANSCRIPTS (DEEPGRAM) ────────────────────────────────────────────────
+  // ── TRANSCRIPTS (STT) ─────────────────────────────────────────────────────
   transcripts: defineTable({
     roomName: v.string(),
     sessionId: v.string(),
@@ -298,6 +380,35 @@ const applicationTables = {
     .index("by_success", ["success"])
     .index("by_target_node", ["targetNodeId"]),
 
+  // ── SPEAKER PROFILES ────────────────────────────────────────────────────
+  speakerProfiles: defineTable({
+    nodeId: v.string(),
+    speakerId: v.string(),
+    label: v.string(),
+    voiceEmbedding: v.optional(v.array(v.number())),
+    lastSeenAt: v.number(),
+    totalInteractions: v.number(),
+    trustLevel: v.number(), // 0-1, affects zone classification
+    notes: v.optional(v.string()),
+  })
+    .index("by_node_and_speaker", ["nodeId", "speakerId"])
+    .index("by_trust", ["trustLevel"]),
+
+  // ── CNS WEIGHT HISTORY (Pareto learning trail) ─────────────────────────
+  weightHistory: defineTable({
+    nodeId: v.string(),
+    contextKey: v.string(),
+    previousWeight: v.number(),
+    newWeight: v.number(),
+    delta: v.number(),
+    reason: v.string(), // "reinforce" | "inhibit" | "decay" | "manual"
+    candidateId: v.optional(v.id("harnessCandidates")),
+    ts: v.number(),
+  })
+    .index("by_node", ["nodeId"])
+    .index("by_context_key", ["nodeId", "contextKey"])
+    .index("by_ts", ["ts"]),
+
   // ── AGENT REGISTRY ────────────────────────────────────────────────────────
   agentRegistry: defineTable({
     nodeId: v.string(),
@@ -316,6 +427,50 @@ const applicationTables = {
   })
     .index("by_node_id", ["nodeId"])
     .index("by_status", ["status"]),
+
+  // ── META-HARNESS CNS (CENTRAL NERVOUS SYSTEM) ───────────────────────────
+  harnessCandidates: defineTable({
+    nodeId: v.string(),
+    harnessCode: v.string(), // Proposed Python/UE5 logic
+    version: v.number(),
+    score: v.optional(v.number()),
+    parentCandidateId: v.optional(v.id("harnessCandidates")),
+    isParetoFrontier: v.boolean(),
+    ts: v.number(),
+  })
+    .index("by_node_and_version", ["nodeId", "version"]),
+
+  executionTraces: defineTable({
+    candidateId: v.id("harnessCandidates"),
+    nodeId: v.string(),
+    traceType: v.string(), // "bootstrap" | "inference" | "render"
+    rawLogs: v.string(),
+    terminalOutput: v.optional(v.string()),
+    success: v.boolean(),
+    ts: v.number(),
+  })
+    .index("by_candidate", ["candidateId"]),
+
+  ternaryAttention: defineTable({
+    nodeId: v.string(),
+    contextKey: v.string(), // e.g. "gpu_availability", "audio_buffer"
+    weight: v.number(),     // -1 (Inhibit), 0 (Neutral), 1 (Excite)
+    updatedAt: v.number(),
+  })
+    .index("by_node_and_key", ["nodeId", "contextKey"]),
+  // ── TRAUMA & WOUND HEALING ────────────────────────────────────────────────
+  traumaRegistry: defineTable({
+    nodeId: v.string(),
+    originatingEventHash: v.string(),
+    injuryTimestamp: v.number(),
+    phase: v.string(),             // "hemostasis" | "inflammation" | "proliferation" | "remodeling" | "integrated"
+    phaseEnteredAt: v.number(),
+    currentIntensity: v.number(),
+    processingCycleCount: v.number(),
+    healingProgress: v.number(),   // 0-1
+  })
+    .index("by_node", ["nodeId"])
+    .index("by_phase", ["phase"]),
 };
 
 export default defineSchema({

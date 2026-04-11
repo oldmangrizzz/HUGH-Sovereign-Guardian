@@ -1,0 +1,5 @@
+{
+  "deployments": {
+    "default": "grizzmed/natasha-zero"
+  }
+}

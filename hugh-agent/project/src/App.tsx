@@ -7,12 +7,18 @@ import AdminDashboard from "./AdminDashboard";
 import HughChat from "./HughChat";
 import TacticalMap from "./TacticalMap";
 import AdminLogin from "./AdminLogin";
+import HughKioskDisplay from "./HughKioskDisplay";
 import { useEndocrine } from "./useEndocrine";
 
-type View = "landing" | "chat" | "admin" | "map";
+type View = "landing" | "chat" | "admin" | "map" | "kiosk";
 
 export default function App() {
-  const [view, setView] = useState<View>("landing");
+  const [view, setView] = useState<View>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("kiosk") === "1") return "kiosk";
+    if (window.location.hostname === "workshop.grizzlymedicine.icu") return "kiosk";
+    return "landing";
+  });
   const endo = useEndocrine();
 
   // ── Admin auth state ──────────────────────────────────────────────────────
@@ -147,10 +153,11 @@ export default function App() {
         {view === "landing" && <PublicLanding onEnter={() => setView("chat")} />}
         {view === "chat"    && <HughChat onAdminLoginRequest={() => setView("admin")} />}
         {view === "map"     && <TacticalMap />}
+        {view === "kiosk"   && <HughKioskDisplay />}
         {view === "admin"   && (
           tokenChecked ? (
             isAdmin
-              ? <AdminDashboard onLogout={handleAdminLogout} />
+              ? <AdminDashboard onLogout={handleAdminLogout} onKiosk={() => setView("kiosk")} />
               : <AdminLogin onSuccess={handleAdminLogin} />
           ) : (
             <div className="min-h-screen flex items-center justify-center" style={{ background: "#080808" }}>

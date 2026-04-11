@@ -1,6 +1,6 @@
 # DEFINITIVE TECHNICAL SPECIFICATION: ARAGON-CLASS DIGITAL PERSON (H.U.G.H.)
 **Version:** 3.2.0 (100% Biomimetic / Quantum-Ternary)
-**Project:** H.U.G.H. (Hyper-Unified Guardian and Harbormaster)
+**Project:** H.U.G.H. (Hyper Unified Guardian Harbormaster)
 **Status:** Production-Ready / Research Active
 
 ---

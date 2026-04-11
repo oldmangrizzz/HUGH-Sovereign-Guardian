@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
+import { Doc, Id } from "../convex/_generated/dataModel";
 
 const NODE_ID = "hugh-primary";
 
@@ -42,7 +42,7 @@ export default function McpPanel() {
         </div>
         {tools && tools.length > 0 ? (
           <div className="space-y-2">
-            {tools.map((tool) => {
+            {tools.map((tool: Doc<"mcpTools">) => {
               const zoneColor = ZONE_COLORS[tool.zone] ?? "#64748b";
               return (
                 <div key={tool._id} className="panel relative overflow-hidden" style={{ borderRadius: 6, padding: "12px 14px" }}>
@@ -98,7 +98,7 @@ export default function McpPanel() {
         </div>
         {callLog && callLog.length > 0 ? (
           <div className="space-y-1">
-            {callLog.map((entry) => {
+            {callLog.map((entry: Doc<"mcpCallLog">) => {
               const zoneColor = ZONE_COLORS[entry.zone] ?? "#64748b";
               return (
                 <div key={entry._id} className="panel-inset" style={{ borderRadius: 4, padding: "8px 12px" }}>

@@ -1,0 +1,31 @@
+[Unit]
+Description=H.U.G.H. UE5 Motor Cortex
+Documentation=https://github.com/GrizzMedicine/H.U.G.H.
+After=network.target display-manager.service
+Wants=display-manager.service
+
+[Service]
+Type=simple
+User=ue5-render
+Group=video
+Environment="DISPLAY=:99"
+Environment="XDG_RUNTIME_DIR=/run/user/$(id -u ue5-render)"
+Environment="VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.x86_64.json"
+Environment="DRI_PRIME=1"
+Environment="CONVEX_URL=https://effervescent-toucan-715.convex.cloud"
+WorkingDirectory=/home/ue5-render
+ExecStart=/home/ue5-render/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd /Game/Maps/Entry -windowed -ResX=5120 -ResY=2880 -opengl3
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hugh-ue5
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ue5-render /tmp /var/tmp
+
+[Install]
+WantedBy=multi-user.target

@@ -59,4 +59,10 @@ window.addEventListener('message', async (message) => {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    allowedHosts: [
+      "workshop.grizzlymedicine.icu",
+      "toolbox.grizzlymedicine.icu",
+    ],
+  },
 }));

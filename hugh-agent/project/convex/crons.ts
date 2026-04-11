@@ -20,4 +20,19 @@ crons.interval(
   {}
 );
 
+crons.interval(
+  "endocrinePulse",
+  { seconds: 60 },
+  internal.endocrine.pulseAll,
+  {}
+);
+
+// Autophagy: sweep expired pheromones from stigmergic substrate
+crons.interval(
+  "autophagySweep",
+  { seconds: 300 }, // Every 5 minutes
+  internal.stigmergy.evaporateExpired,
+  { nodeId: "hugh-primary" }
+);
+
 export default crons;

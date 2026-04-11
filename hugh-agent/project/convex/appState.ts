@@ -7,8 +7,9 @@
  * All mutations are PUBLIC so the MCP server can call them via the Convex
  * HTTP API. Secure them with the X-Hugh-Secret header check in router.ts.
  */
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query, internalMutation, MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
+import { requireIdentity } from "./authHelpers";
 
 const STATE_KEY = "main";
 
@@ -42,10 +43,10 @@ export type Camera = {
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 
-async function getOrCreateState(ctx: any) {
+async function getOrCreateState(ctx: MutationCtx) {
   const existing = await ctx.db
     .query("appState")
-    .withIndex("by_key", (q: any) => q.eq("key", STATE_KEY))
+    .withIndex("by_key", (q) => q.eq("key", STATE_KEY))
     .unique();
   if (existing) return existing;
   const id = await ctx.db.insert("appState", {
@@ -56,14 +57,17 @@ async function getOrCreateState(ctx: any) {
     cameraJson: "{}",
     updatedAt: Date.now(),
   });
-  return await ctx.db.get(id);
+  const doc = await ctx.db.get(id);
+  if (!doc) throw new Error("Failed to create appState document");
+  return doc;
 }
 
 // ── GET FULL STATE ─────────────────────────────────────────────────────────
-// Simple singleton read. Unity can also call getWorldSnapshot for pheromones.
+// NX-10 FIX: Require authenticated identity to read system state.
 export const getFullState = query({
   args: {},
   handler: async (ctx) => {
+    await requireIdentity(ctx);
     return await ctx.db
       .query("appState")
       .withIndex("by_key", (q) => q.eq("key", STATE_KEY))
@@ -98,8 +102,8 @@ export const getWorldSnapshot = query({
 });
 
 // ── SET MODE ───────────────────────────────────────────────────────────────
-// MCP: setMode("combat") | setMode("nominal") | setMode("standby")
-export const setMode = mutation({
+// J-02 FIX: Internal — only callable via router (which checks X-Hugh-Secret)
+export const setMode = internalMutation({
   args: { mode: v.string() },
   handler: async (ctx, args) => {
     const doc = await getOrCreateState(ctx);
@@ -109,9 +113,8 @@ export const setMode = mutation({
 });
 
 // ── ADD ALERT ──────────────────────────────────────────────────────────────
-// MCP: addAlert("critical", "Perimeter breach at sector 7")
-// Stored as JSON array in alertsJson. Max 50 kept, newest first.
-export const addAlert = mutation({
+// J-02 FIX: Internal — only callable via router
+export const addAlert = internalMutation({
   args: {
     severity: v.union(v.literal("info"), v.literal("warning"), v.literal("critical")),
     message: v.string(),
@@ -135,9 +138,8 @@ export const addAlert = mutation({
 });
 
 // ── SPAWN ENTITY ───────────────────────────────────────────────────────────
-// MCP: spawnEntity("drone", "Scout-1", 12.5, 0, -8.3, "#00ff88")
-// Stored as JSON array in entitiesJson. Max 200 kept.
-export const spawnEntity = mutation({
+// J-02 FIX: Internal — only callable via router
+export const spawnEntity = internalMutation({
   args: {
     type: v.string(),
     label: v.string(),
@@ -168,8 +170,8 @@ export const spawnEntity = mutation({
   },
 });
 
-// ── DESPAWN ENTITY ─────────────────────────────────────────────────────────
-export const despawnEntity = mutation({
+// J-02 FIX: Internal
+export const despawnEntity = internalMutation({
   args: { entityId: v.string() },
   handler: async (ctx, args) => {
     const doc = await getOrCreateState(ctx);
@@ -183,9 +185,8 @@ export const despawnEntity = mutation({
   },
 });
 
-// ── MOVE CAMERA ────────────────────────────────────────────────────────────
-// MCP: moveCamera(0, 50, -20, "entity_abc123")
-export const moveCamera = mutation({
+// J-02 FIX: Internal
+export const moveCamera = internalMutation({
   args: {
     x: v.number(),
     y: v.number(),
@@ -209,28 +210,28 @@ export const moveCamera = mutation({
   },
 });
 
-// ── DROP PHEROMONE ─────────────────────────────────────────────────────────
-// MCP: dropPheromone("threat", 0.85, 12.5, 0, -8.3, "hugh-primary")
-// TTL defaults to 60s. 3D position encoded in payload JSON.
-export const dropPheromone = mutation({
+// J-02 FIX: Internal
+export const dropPheromone = internalMutation({
   args: {
     type: v.string(),
     weight: v.number(),
-    x: v.number(),
-    y: v.number(),
-    z: v.number(),
+    payload: v.optional(v.string()),
+    x: v.optional(v.number()),
+    y: v.optional(v.number()),
+    z: v.optional(v.number()),
     emitterId: v.string(),
     ttlMs: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const ttl = args.ttlMs ?? 60_000;
     const now = Date.now();
+    const payloadStr = args.payload ?? JSON.stringify({ x: args.x, y: args.y, z: args.z });
     const id = await ctx.db.insert("pheromones", {
       emitterId: args.emitterId,
       nodeId: "world",
       signature: `${args.type}:${args.emitterId}:${now}`,
       type: args.type,
-      payload: JSON.stringify({ x: args.x, y: args.y, z: args.z }),
+      payload: payloadStr,
       weight: Math.max(0, Math.min(1, args.weight)),
       zone: "green",
       expiresAt: now + ttl,
@@ -240,8 +241,35 @@ export const dropPheromone = mutation({
   },
 });
 
-// ── UPSERT STATE (legacy / generic patch) ─────────────────────────────────
-export const upsertState = mutation({
+// ── WAKE WORD & ATTENTION ──────────────────────────────────────────────────
+// NX-14 FIX: Require authenticated identity to trigger wake word.
+export const triggerWakeWord = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireIdentity(ctx);
+    const doc = await getOrCreateState(ctx);
+    await ctx.db.patch(doc._id, {
+      isAttentive: true,
+      lastWakeWordTs: Date.now(),
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// J-02 FIX: Internal (was unused externally)
+export const setAttentive = internalMutation({
+  args: { attentive: v.boolean() },
+  handler: async (ctx, args) => {
+    const doc = await getOrCreateState(ctx);
+    await ctx.db.patch(doc._id, {
+      isAttentive: args.attentive,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// J-02 FIX: Internal — only boot.ts calls this
+export const upsertState = internalMutation({
   args: {
     mode: v.optional(v.string()),
     alertsJson: v.optional(v.string()),

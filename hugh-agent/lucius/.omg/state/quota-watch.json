@@ -1,0 +1,10 @@
+{
+  "turn_count": 36,
+  "last_session_id": "2238d544-94b5-4592-94c7-86215af4c07a",
+  "last_event_key": "2238d544-94b5-4592-94c7-86215af4c07a:transcript:f1fa1d69123c65a4a3307af362bd82be0accfadc757f8c72f076dc5a4cdd32f9",
+  "last_transcript_hash": "f1fa1d69123c65a4a3307af362bd82be0accfadc757f8c72f076dc5a4cdd32f9",
+  "last_model": "gemini-3-flash-preview",
+  "last_turn_total_tokens": 311930,
+  "last_session_total_tokens": 54148607,
+  "updated_at": "2026-04-09T22:01:58.671Z"
+}

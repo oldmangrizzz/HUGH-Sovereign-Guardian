@@ -12,20 +12,43 @@ interface Message {
 
 const NODE_ID = "hugh-primary";
 
+const CONVEX_URL = import.meta.env.VITE_CONVEX_URL as string ?? "";
+
 function uid() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SpeechRecognitionAny = any;
+// Web Speech API types (not fully included in TS DOM lib)
+interface SpeechRecognitionEventCompat extends Event {
+  readonly results: SpeechRecognitionResultList;
+  readonly resultIndex: number;
+}
+
+interface SpeechRecognitionErrorEventCompat extends Event {
+  readonly error: string;
+  readonly message: string;
+}
+
+interface SpeechRecognitionInstance {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventCompat) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventCompat) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+interface SpeechRecognitionConstructor {
+  new (): SpeechRecognitionInstance;
+}
 
 declare global {
   interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    SpeechRecognition: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    webkitSpeechRecognition: any;
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
   }
 }
 
@@ -38,6 +61,7 @@ export default function HughChat({ onAdminLoginRequest }: { onAdminLoginRequest:
       timestamp: Date.now(),
     },
   ]);
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
   const [input, setInput]           = useState("");
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking]   = useState(false);
@@ -47,14 +71,14 @@ export default function HughChat({ onAdminLoginRequest }: { onAdminLoginRequest:
   const [showAdminBridge, setShowAdminBridge] = useState(false);
 
   const messagesEndRef  = useRef<HTMLDivElement>(null);
-  const recognitionRef  = useRef<SpeechRecognitionAny | null>(null);
+  const recognitionRef  = useRef<SpeechRecognitionInstance | null>(null);
   const synthRef        = useRef<SpeechSynthesis | null>(null);
   const inputRef        = useRef<HTMLTextAreaElement>(null);
 
   const endo      = useEndocrine();
   const endocrine = useQuery(api.endocrine.getState, { nodeId: NODE_ID });
   const chat      = useAction(api.hugh.chat);
-  const spike     = useMutation(api.endocrine.spike);
+  const spike     = useMutation(api.endocrine.spikeAuthenticated);
   const initNode  = useMutation(api.endocrine.initNode);
 
   /* ── VOICE SETUP ── */
@@ -66,7 +90,7 @@ export default function HughChat({ onAdminLoginRequest }: { onAdminLoginRequest:
       rec.continuous = false;
       rec.interimResults = true;
       rec.lang = "en-US";
-      rec.onresult = (e: SpeechRecognitionAny) => {
+      rec.onresult = (e: SpeechRecognitionEventCompat) => {
         let interim = "", final = "";
         for (let i = e.resultIndex; i < e.results.length; i++) {
           if (e.results[i].isFinal) final += e.results[i][0].transcript;
@@ -86,7 +110,26 @@ export default function HughChat({ onAdminLoginRequest }: { onAdminLoginRequest:
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const speak = useCallback((text: string) => {
+  const speak = useCallback(async (text: string) => {
+    if (CONVEX_URL) {
+      try {
+        const res = await fetch(`${CONVEX_URL}/api/tts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          const url  = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audio.onended = () => URL.revokeObjectURL(url);
+          audio.onerror = () => URL.revokeObjectURL(url);
+          await audio.play().catch(() => {});
+          return;
+        }
+      } catch {}
+    }
+    // fallback
     if (!synthRef.current) return;
     synthRef.current.cancel();
     const utt = new SpeechSynthesisUtterance(text);

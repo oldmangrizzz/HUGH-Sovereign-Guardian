@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
+import { Doc, Id } from "../convex/_generated/dataModel";
 
 const NODE_ID = "hugh-primary";
 
@@ -58,7 +58,7 @@ export default function StandbyPanel() {
             <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
             <span className="font-mono text-[10px] text-red-400 tracking-widest font-bold">STANDBY ACTIVE — {active.length} OPEN</span>
           </div>
-          {active.map((entry) => (
+          {active.map((entry: Doc<"standbyLog">) => (
             <div key={entry._id} className="mb-3">
               <p className="font-mono text-[10px] text-workshop-muted mb-1">
                 Mode: <span className="text-red-400">{entry.standbyMode.toUpperCase()}</span>
@@ -150,7 +150,7 @@ export default function StandbyPanel() {
         </div>
         {history && history.length > 0 ? (
           <div className="space-y-2">
-            {history.map((entry) => (
+            {history.map((entry: Doc<"standbyLog">) => (
               <div key={entry._id} className="panel-inset" style={{ borderRadius: 4, padding: "10px 12px" }}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-mono text-[10px]" style={{ color: entry.resolvedAt ? "#10b981" : "#ef4444" }}>

@@ -1,0 +1,3 @@
+5bd187663457ddc2df7fa9bb5d7b2323a7c8370259743e73f4ac572bf04d1b16  agent.system.main.role.md
+f6a95ff79e35ded4dc9e2996c88e8c2d0266639e6d92c24c659fe28dff661444  agent.system.memories.md
+d411e206a0e51d64ca82871f7fd6cf706820afb9e2648d35e166b1ae56b5b5d4  agent.system.main.solving.md

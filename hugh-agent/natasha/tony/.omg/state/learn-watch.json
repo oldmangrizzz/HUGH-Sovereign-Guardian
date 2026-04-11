@@ -1,0 +1,11 @@
+{
+  "last_session_id": "af8dc5a8-5bc9-4658-8d9f-16ffbce4eea1",
+  "last_event_key": "af8dc5a8-5bc9-4658-8d9f-16ffbce4eea1:transcript:de2fb8fbcbf2fd0c9f35508ad9f12caf96352aa91b6b8d47d496e4f52c377885",
+  "last_prompted_session_id": "af8dc5a8-5bc9-4658-8d9f-16ffbce4eea1",
+  "last_reason": "already-prompted-this-session",
+  "last_user_message_count": 28,
+  "last_actionable_message_count": 7,
+  "deep_interview_lock_active": false,
+  "deep_interview_lock_source": "/Users/grizzmed/ProxmoxMCP-Plus/hugh-agent/natasha/tony/.omg/state/deep-interview.json",
+  "updated_at": "2026-04-08T13:50:12.486Z"
+}

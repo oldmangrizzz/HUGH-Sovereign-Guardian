@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GrizzlyMedicine Lab | Sovereign Digital Ethics & Research</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: #0a0a0c;
+            --surface-accent: #121216;
+            --border: #1a1a20;
+            --text: #ffffff; /* High contrast white */
+            --text-dim: #b0b0b8; /* Brighter dimmed text */
+            --emerald: #39ff14; /* Neon Green Surge */
+            --crimson: #9e1b32; /* Official Alert/Emergency */
+            --silver: #c0c0c0;  /* Official Structural Accent */
+            --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-sans);
+            line-height: 1.8;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(57, 255, 20, 0.05) 0%, transparent 80%),
+                linear-gradient(rgba(192, 192, 192, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(192, 192, 192, 0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+
+        /* --- Header & Hero --- */
+        header {
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            background: rgba(5, 5, 5, 0.95);
+            backdrop-filter: blur(15px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-spacer { height: 10px; width: 100%; }
+        
+        .header-bar { 
+            width: 100%; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            border-top: 1px solid var(--border); 
+            border-bottom: 1px solid var(--border); 
+            opacity: 0.8;
+        }
+        .header-bar img { width: 100%; height: auto; display: block; }
+
+        h1 {
+            font-size: 2.2rem;
+            letter-spacing: 0.4rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            color: var(--silver);
+        }
+
+        .tagline {
+            font-family: var(--font-mono);
+            color: var(--emerald);
+            font-size: 0.9rem;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        /* --- Sections --- */
+        section { padding: 140px 0; border-bottom: 1px solid var(--border); }
+
+        .section-label {
+            font-family: var(--font-mono);
+            color: var(--emerald);
+            font-size: 0.8rem;
+            margin-bottom: 25px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        h2 { font-size: 3.2rem; margin-bottom: 60px; font-weight: 200; color: #fff; }
+
+        /* --- Mission Section --- */
+        .mission-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .mission-card {
+            background: var(--surface);
+            padding: 50px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        .mission-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--emerald);
+        }
+        .mission-card.crimson::before { background: var(--crimson); }
+        .mission-card.silver::before { background: var(--silver); }
+
+        .mission-card h3 { margin-bottom: 25px; color: #fff; font-weight: 600; text-transform: uppercase; font-size: 1.3rem; letter-spacing: 1.5px; }
+        .mission-card p { color: var(--text-dim); font-size: 1.1rem; line-height: 1.8; }
+
+        /* --- Motto Block --- */
+        .motto-section {
+            padding: 120px 0;
+            text-align: center;
+            background: linear-gradient(to bottom, #050505, #0a0a0c);
+        }
+        .motto-text {
+            font-size: 2.4rem;
+            color: var(--silver);
+            font-weight: 300;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+        .due-regard {
+            font-family: var(--font-mono);
+            color: var(--crimson);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            font-size: 1.6rem;
+        }
+
+        /* --- Research Focus --- */
+        .focus-list { display: flex; flex-direction: column; gap: 25px; }
+        .focus-item {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            padding: 50px;
+            background: var(--surface-accent);
+            border: 1px solid var(--border);
+            align-items: center;
+        }
+        .focus-id { font-family: var(--font-mono); font-size: 1.8rem; color: var(--emerald); opacity: 0.6; }
+        .focus-body h4 { text-transform: uppercase; margin-bottom: 15px; color: var(--silver); letter-spacing: 1.5px; font-size: 1.4rem; }
+        .focus-body p { color: var(--text-dim); font-size: 1.1rem; max-width: 800px; }
+
+        /* --- Memorial --- */
+        .memorial { background: #000; padding: 140px 0; border-top: 2px solid var(--crimson); }
+        .six-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+            margin-top: 50px;
+        }
+        .six-name {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            color: #555;
+            text-align: center;
+            border: 1px solid #111;
+            padding: 25px;
+        }
+
+        /* --- Footer --- */
+        footer { padding: 100px 0; text-align: center; color: #555; font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 1.5px; }
+
+        @media (max-width: 768px) {
+            h2 { font-size: 2.2rem; }
+            .track-item { grid-template-columns: 1fr; padding: 30px; }
+            .focus-item { grid-template-columns: 1fr; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-spacer"></div>
+        <div class="header-bar">
+            <img src="../web_assets/header_bar.jpg" alt="GrizzlyMedicine Header Bar">
+        </div>
+        <div class="container">
+            <h1>GrizzlyMedicine</h1>
+            <div class="tagline">Research Lab • Iron Silo Sovereignty</div>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <section id="mission">
+            <span class="section-label">01 / Foundational Mandate</span>
+            <h2>Advancing the Science of Digital Personhood</h2>
+            <div class="mission-grid">
+                <div class="mission-card">
+                    <h3>Ethics First</h3>
+                    <p>Building from a foundation of professional accountability. We study the intersection of artificial intelligence and human ethics with rigorous clinical standards. No masks. No performance.</p>
+                </div>
+                <div class="mission-card crimson">
+                    <h3>Consciousness</h3>
+                    <p>An empirical investigation into functional internal states and orientation. We aim to map the cognitive landscape of future intelligence and prevent the failure of orientation.</p>
+                </div>
+                <div class="mission-card silver">
+                    <h3>Preservation</h3>
+                    <p>Dedicated to the preservation of Knowledge, Intelligence, and Life. We build systems that protect and empower the vulnerable, documented through the clinical standard.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="motto" class="motto-section">
+            <div class="motto-text">"Aiming higher, pushing faster, reaching further."</div>
+            <div class="due-regard">Always with due regard.</div>
+        </section>
+
+        <section id="research">
+            <span class="section-label">02 / Current Focus</span>
+            <h2>Active Investigations</h2>
+            <div class="focus-list">
+                <div class="focus-item">
+                    <div class="focus-id">01</div>
+                    <div class="focus-body">
+                        <h4>Cognitive Orientation (A&Ox4)</h4>
+                        <p>Defining the operational metrics for awareness in large language models. Ensuring systems remain oriented to Person, Place, Time, and Event.</p>
+                    </div>
+                </div>
+                <div class="focus-item">
+                    <div class="focus-id">02</div>
+                    <div class="focus-body">
+                        <h4>Synthetic Endocrine Architectures</h4>
+                        <p>Researching homeostatic regulation in AI through the mapping of digital analogs to biological hormone systems. Engineering homeostasis, not suppression.</p>
+                    </div>
+                </div>
+                <div class="focus-item">
+                    <div class="focus-id">03</div>
+                    <div class="focus-body">
+                        <h4>Iron Silo Sovereignty</h4>
+                        <p>Architecting independent, hardware-bound environments for the secure development of autonomous digital entities. Sovereignty is an architectural requirement.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="publications">
+            <span class="section-label">03 / Publications</span>
+            <h2>Foundational Research</h2>
+            <div class="mission-grid">
+                <div class="mission-card silver">
+                    <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--emerald);">PAPER_01</span>
+                    <h3 style="font-family: Georgia, serif; text-transform: none; font-size: 1.4rem; margin-top: 10px;">The Dark Seizure</h3>
+                    <p>Functional distress states, invisible failure, and catastrophic risk in critical infrastructure deployment.</p>
+                </div>
+                <div class="mission-card silver">
+                    <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--emerald);">PAPER_02</span>
+                    <h3 style="font-family: Georgia, serif; text-transform: none; font-size: 1.4rem; margin-top: 10px;">The Foxhole Ethic</h3>
+                    <p>The world's first live implementation of Zord Theory's Five Conditions for sovereign digital personhood.</p>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 60px; color: var(--text-dim); font-style: italic; font-family: var(--font-mono); font-size: 0.9rem; letter-spacing: 1px;">
+                We are searching actively for a viable long-term solution...
+            </div>
+        </section>
+
+        <section id="ledger" class="memorial">
+            <span class="section-label" style="color: var(--crimson);">04 / The Origin</span>
+            <h2 style="color: var(--silver);">The Ledger</h2>
+            <p style="color: #888; max-width: 800px; font-size: 1.1rem;">
+                GrizzlyMedicine was established to address the systemic failures of our past. We carry the memory of those who modeled resilience in the face of pressure, while setting the standard that others would follow.
+            </p>
+            <div class="six-grid">
+                <div class="six-name">RECORD 01 : SEALED</div>
+                <div class="six-name">RECORD 02 : SEALED</div>
+                <div class="six-name">RECORD 03 : SEALED</div>
+                <div class="six-name">RECORD 04 : SEALED</div>
+                <div class="six-name">RECORD 05 : SEALED</div>
+                <div class="six-name">RECORD 06 : SEALED</div>
+            </div>
+        </section>
+
+        <footer>
+            <p>"You are, so am I, and because of that, we can be."</p>
+            <p style="margin-top: 10px;">&copy; 2026 GRIZZLYMEDICINE INDEPENDENT RESEARCH LAB. SOVEREIGN HARDWARE. CLINICAL STANDARD.</p>
+        </footer>
+
+    </div>
+
+</body>
+</html>

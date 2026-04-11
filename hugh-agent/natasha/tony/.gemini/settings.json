@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "macos-gui": {
+      "command": "/Users/grizzmed/ProxmoxMCP-Plus/macOS_gui/venv/bin/python3",
+      "args": [
+        "/Users/grizzmed/ProxmoxMCP-Plus/macOS_gui/server.py"
+      ]
+    }
+  }
+}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>H.U.G.H. MISSION: ARC-AGI-3 (>50%)</title>
+    <style>
+        :root { --hugh-gold: #d4af37; --hugh-bg: #050505; --hugh-glow: rgba(212, 175, 55, 0.4); }
+        body { background-color: var(--hugh-bg); color: white; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .container { text-align: center; width: 90%; max-width: 800px; border: 2px solid var(--hugh-gold); padding: 40px; box-shadow: 0 0 30px var(--hugh-glow); }
+        h1 { color: var(--hugh-gold); letter-spacing: 8px; text-transform: uppercase; margin: 0 0 10px 0; }
+        .mission { color: #888; font-size: 1.2em; margin-bottom: 40px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .mission span { color: var(--hugh-gold); font-weight: bold; }
+        .progress-box { border: 1px solid var(--hugh-gold); padding: 4px; height: 50px; position: relative; }
+        .progress-bar { background-color: var(--hugh-gold); height: 100%; width: 0%; transition: width 5s linear; box-shadow: 0 0 25px var(--hugh-gold); }
+        .status-text { margin-top: 30px; font-size: 1.4em; font-weight: bold; color: var(--hugh-gold); min-height: 1.5em; }
+        .details { margin-top: 50px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; font-size: 0.8em; color: #666; }
+        .detail-item span { color: #aaa; display: block; margin-top: 5px; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SOVEREIGN SYNTHESIS</h1>
+        <div class="mission">MISSION OBJECTIVE: <span>ARC-AGI-3 ACCURACY > 50%</span></div>
+        <div class="progress-box"><div id="bar" class="progress-bar"></div></div>
+        <div id="status" class="status-text">INITIALIZING MISSION SUBSTRATE...</div>
+        <div class="details">
+            <div class="detail-item">COMPUTE<span>KAGGLE T4-GPU</span></div>
+            <div class="detail-item">EPOCHS<span>10 (DEEP IMPRINT)</span></div>
+            <div class="detail-item">SYNC<span>ACTIVE TELEMETRY</span></div>
+        </div>
+    </div>
+    <script>
+        const bar = document.getElementById('bar');
+        const status = document.getElementById('status');
+        async function update() {
+            try {
+                const r = await fetch('training_progress.json?t=' + Date.now());
+                const d = await r.json();
+                bar.style.width = (d.progress * 100) + '%';
+                status.innerText = d.phase.toUpperCase();
+            } catch (e) {}
+        }
+        setInterval(update, 5000);
+        update();
+    </script>
+</body>
+</html>

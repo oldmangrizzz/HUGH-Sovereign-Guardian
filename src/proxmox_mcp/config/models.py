@@ -48,14 +48,15 @@ class ProxmoxConfig(BaseModel):
 
 class AuthConfig(BaseModel):
     """Model for Proxmox authentication configuration.
-    
-    Defines the required parameters for API authentication
-    using token-based authentication. All fields are required
-    to ensure secure API access.
+
+    Supports both token-based and password-based authentication.
+    For token-based: provide user, token_name, and token_value.
+    For password-based: provide user and password.
     """
     user: str  # Required: Username (e.g., 'root@pam')
-    token_name: str  # Required: API token name
-    token_value: str  # Required: API token secret
+    token_name: Optional[str] = None  # Optional: API token name
+    token_value: Optional[str] = None  # Optional: API token secret
+    password: Optional[str] = None  # Optional: Password for authentication
 
 class LoggingConfig(BaseModel):
     """Model for logging configuration.

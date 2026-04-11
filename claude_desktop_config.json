@@ -49,7 +49,7 @@
       "args": ["-y", "hass-mcp"],
       "env": {
         "HA_URL": "http://192.168.7.194:8123",
-        "HA_TOKEN": "PLACEHOLDER_REPLACE_WITH_TOKEN"
+        "HA_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3MGM1ZjA4YWRiZTg0ZTM2YTI0YmY5M2I4ZDNkODdlNyIsImlhdCI6MTc3MzA4OTY3NSwiZXhwIjoyMDg4NDQ5Njc1fQ.JnitS57smDEOUSCrrlJij5SpWz24zIa34Ur7IuI-vPQ"
       }
     }
   }

@@ -1,0 +1,1275 @@
+{
+  "version": 1,
+  "generated": "2026-04-07T01:30:49.950Z",
+  "root": "/Users/grizzmed/ProxmoxMCP-Plus/hugh-agent/lucius",
+  "fileCount": 46,
+  "files": {
+    "matt-clawd__knowledge-base-rag/src/src/browser.js": {
+      "lang": "javascript",
+      "lines": 38,
+      "role": "module",
+      "exports": [],
+      "imports": [],
+      "symbols": [
+        "isBrowserAvailable"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/src/chunker.js": {
+      "lang": "javascript",
+      "lines": 88,
+      "role": "module",
+      "exports": [],
+      "imports": [],
+      "symbols": [
+        "DEFAULT_CHUNK_SIZE",
+        "DEFAULT_OVERLAP",
+        "MIN_CHUNK_SIZE",
+        "chunkText",
+        "splitSentences",
+        "getOverlap"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/src/citation-formatter.js": {
+      "lang": "javascript",
+      "lines": 308,
+      "role": "module",
+      "exports": [],
+      "imports": [],
+      "symbols": [
+        "MONTHS",
+        "TYPE_EMOJI",
+        "extractDomain",
+        "extractAuthor",
+        "formatFreshnessIndicator",
+        "formatDate",
+        "buildCitation",
+        "formatFootnote",
+        "formatCompact",
+        "formatInline",
+        "formatCitedResponse"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/src/config.js": {
+      "lang": "javascript",
+      "lines": 129,
+      "role": "config",
+      "exports": [],
+      "imports": [
+        "fs",
+        "path",
+        "os",
+        "@supabase/supabase-js",
+        "../../../shared/config"
+      ],
+      "symbols": [
+        "fs",
+        "path",
+        "os",
+        "_sharedConfig",
+        "_loadSharedConfig",
+        "loadApiCredentials",
+        "loadEmbeddingCredentials",
+        "SKILL_ROOT",
+        "readEnvFromFile",
+        "resolveEnv",
+        "loadFromEnvFile",
+        "getDataDir",
+        "getDbPath",
+        "getOllamaUrl",
+        "getSlackChannel",
+        "loadSupabaseConfig",
+        "_supabaseClient",
+        "getSupabaseClient"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/src/db.js": {
+      "lang": "javascript",
+      "lines": 365,
+      "role": "module",
+      "exports": [],
+      "imports": [
+        "./config",
+        "../../../shared/event-log"
+      ],
+      "symbols": [
+        "bufferToPgvector",
+        "parseTags",
+        "KnowledgeDB"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/src/embeddings.js": {
+      "lang": "javascript",
+      "lines": 3,
+      "role": "module",
+      "exports": [],
+      "imports": [
+        "../../../shared/embeddings"
+      ],
+      "symbols": []
+    },
+    "matt-clawd__knowledge-base-rag/src/src/entity-extractor.js": {
+      "lang": "javascript",
+      "lines": 143,
+      "role": "module",
+      "exports": [],
+      "imports": [],
+      "symbols": [
+        "KNOWN_ENTITIES",
+        "ENTITY_PATTERNS",
+        "extractEntities"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/src/extractor.js": {
+      "lang": "javascript",
+      "lines": 1892,
+      "role": "module",
+      "exports": [],
+      "imports": [
+        "child_process",
+        "crypto",
+        "fs",
+        "path",
+        "os",
+        "net",
+        "./config",
+        "./browser",
+        "../../../shared/content-sanitizer",
+        "../../../shared/event-log",
+        "../../../shared/interaction-store",
+        "../../../shared/cost-estimator",
+        "../../../shared/llm-router",
+        "../../../shared/llm-output-guards",
+        "../../../shared/model-routing",
+        "../../../shared/model-utils",
+        "../../../shared/routed-llm",
+        "../../../shared/path-guards",
+        "https"
+      ],
+      "symbols": [
+        "crypto",
+        "fs",
+        "path",
+        "os",
+        "net",
+        "llmRouter",
+        "sleepSync",
+        "isRetryableError",
+        "withRetry",
+        "isSubstantiveContent",
+        "looksLikeErrorPage",
+        "validateContent",
+        "TRACKING_PARAMS",
+        "normalizeUrl",
+        "detectType",
+        "isTwitterUrl",
+        "isArxivUrl",
+        "getArxivId",
+        "hasUrlScheme",
+        "assertHttpUrl",
+        "looksLikeFileInput",
+        "extractContent",
+        "browserDisabled",
+        "disableBrowser",
+        "isBrowserEnabled",
+        "isKbDebugEnabled",
+        "logExtractionStep",
+        "extractTwitter",
+        "extractArxivPdf",
+        "extractWithFallbacks",
+        "extractViaSummarize",
+        "extractViaSummarizeFirecrawl",
+        "extractViaSummarizeFull",
+        "extractViaHTTP",
+        "fetchTweetViaXApi",
+        "parseXApiTweetResponse",
+        "runXSearch",
+        "buildXSearchScript",
+        "fetchAuthorReplies",
+        "formatThreadContent",
+        "fetchThreadViaXApi",
+        "extractExternalUrls",
+        "parseArticleBlocks",
+        "PRIVATE_HOST_RE",
+        "RESERVED_HOSTNAMES",
+        "BLOCKED_METADATA_HOSTNAMES",
+        "isPrivateHost",
+        "extractMappedIpv4",
+        "isBlockedNetworkHost",
+        "curlGet",
+        "REPO_ROOT",
+        "ALLOWED_FILE_ROOTS",
+        "KB_DENIED_FILE_BASENAMES",
+        "KB_DENIED_FILE_EXTENSIONS",
+        "resolveExistingFilePath",
+        "getUrlHostSafe",
+        "isPlainTextFile",
+        "stripHtml",
+        "stripMarkdown",
+        "JUNK_TITLES",
+        "isJunkTitle",
+        "extractTitle",
+        "generateTextTitle",
+        "parseEnvLine",
+        "readSecretFromEnvFile",
+        "sanitizeSecret",
+        "readSecret",
+        "contentHash",
+        "getApiKeyEnv"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/src/index.js": {
+      "lang": "javascript",
+      "lines": 29,
+      "role": "module",
+      "exports": [],
+      "imports": [
+        "./db",
+        "./embeddings",
+        "./search",
+        "./chunker",
+        "./extractor",
+        "./entity-extractor",
+        "./config",
+        "./db"
+      ],
+      "symbols": [
+        "KnowledgeDB",
+        "EmbeddingGenerator",
+        "KnowledgeSearch"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/src/ingest-request-state.js": {
+      "lang": "javascript",
+      "lines": 213,
+      "role": "module",
+      "exports": [],
+      "imports": [
+        "fs",
+        "path",
+        "crypto",
+        "./config"
+      ],
+      "symbols": [
+        "fs",
+        "path",
+        "crypto",
+        "REQUEST_STATE_DIR",
+        "REQUEST_STALE_MS",
+        "DEFAULT_WAIT_TIMEOUT_MS",
+        "DEFAULT_WAIT_POLL_MS",
+        "nowIso",
+        "isPidAlive",
+        "ensureStateDir",
+        "hashKey",
+        "getRequestPaths",
+        "parseTimestamp",
+        "readJson",
+        "writeJsonAtomic",
+        "buildTelegramRequestKey",
+        "readRequestCheckpoint",
+        "isCheckpointActive",
+        "releaseRequestLock",
+        "tryClearStaleLock",
+        "claimRequestExecution",
+        "markRequestCompleted",
+        "markRequestFailed"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/src/search.js": {
+      "lang": "javascript",
+      "lines": 265,
+      "role": "module",
+      "exports": [],
+      "imports": [
+        "../../../shared/content-sanitizer",
+        "../../../shared/event-log",
+        "./citation-formatter",
+        "./db"
+      ],
+      "symbols": [
+        "SOURCE_CREDIBILITY",
+        "DEFAULT_CREDIBILITY",
+        "FRESHNESS_DECAY_DAYS",
+        "FRESHNESS_WEIGHT",
+        "CREDIBILITY_WEIGHT",
+        "TAG_SCORE_WEIGHTS",
+        "getCredibility",
+        "getFreshnessBoost",
+        "parseSince",
+        "KnowledgeSearch",
+        "formatResponse"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/scripts/backfill-tweet-links.js": {
+      "lang": "javascript",
+      "lines": 195,
+      "role": "script",
+      "exports": [],
+      "imports": [
+        "path",
+        "../src",
+        "../src/extractor",
+        "../../../shared/ingestion-security",
+        "../../../shared/event-log",
+        "./ingest",
+        "../src/config"
+      ],
+      "symbols": [
+        "path",
+        "LOCK_FILE",
+        "sleep"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/scripts/delete.js": {
+      "lang": "javascript",
+      "lines": 57,
+      "role": "script",
+      "exports": [],
+      "imports": [
+        "../src",
+        "../../../shared/event-log"
+      ],
+      "symbols": []
+    },
+    "matt-clawd__knowledge-base-rag/src/scripts/ingest-and-crosspost.js": {
+      "lang": "javascript",
+      "lines": 725,
+      "role": "script",
+      "exports": [],
+      "imports": [
+        "path",
+        "child_process",
+        "../src",
+        "../../../shared/event-log",
+        "../src/extractor",
+        "./ingest",
+        "../src/ingest-request-state",
+        "../src/config",
+        "../../../shared/telegram-delivery"
+      ],
+      "symbols": [
+        "path",
+        "INGEST_SCRIPT",
+        "ROOT_SLACK_POST",
+        "ROOT_TELEGRAM_CONFIG",
+        "SLACK_PREFIX",
+        "URL_REGEX",
+        "RECENT_DUPLICATE_WINDOW_MS",
+        "REQUEST_WAIT_TIMEOUT_MS",
+        "formatSlackCrosspostText",
+        "extractXHandle",
+        "summarizeUrl",
+        "escapeRegExp",
+        "cleanRelayTopic",
+        "formatRelaySubject",
+        "formatChunkLabel",
+        "formatSlackStatus",
+        "extractOneSentenceSummary",
+        "formatOverlapWarning",
+        "formatSubstanceWarning",
+        "parseSourceTimestamp",
+        "isRecentDuplicate",
+        "isSameRequestReplay",
+        "formatIngestRelayLine",
+        "formatIngestFailureLine",
+        "normalizeCandidateUrl",
+        "resolveCrosspostUrl",
+        "parseArgs",
+        "buildRequestContext",
+        "loadTelegramFinalDestination",
+        "deliverTelegramFinalLine",
+        "maybeDeliverTelegramFinalLine",
+        "buildCachedOutput",
+        "toCheckpointSource",
+        "runIngest",
+        "isLockBusyError"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/scripts/ingest.js": {
+      "lang": "javascript",
+      "lines": 935,
+      "role": "script",
+      "exports": [],
+      "imports": [
+        "path",
+        "fs",
+        "../src",
+        "../src/extractor",
+        "../src/entity-extractor",
+        "../../../shared/content-sanitizer",
+        "../../../shared/frontier-scanner",
+        "../../../shared/event-log",
+        "../src/config",
+        "../../../shared/autonomy-controller"
+      ],
+      "symbols": [
+        "path",
+        "fs",
+        "LOCK_FILE",
+        "autoTag",
+        "assessLargeDocRelevance",
+        "NON_ARTICLE_SIGNALS",
+        "assessContentSubstance",
+        "parseOptions",
+        "getUrlHost",
+        "detectSourceType",
+        "getFrontierScanSource",
+        "STALE_LOCK_MS",
+        "isPidAlive",
+        "acquireLock",
+        "releaseLock"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/scripts/list.js": {
+      "lang": "javascript",
+      "lines": 71,
+      "role": "script",
+      "exports": [],
+      "imports": [
+        "../src",
+        "../../../shared/event-log"
+      ],
+      "symbols": [
+        "parseOptions"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/scripts/query.js": {
+      "lang": "javascript",
+      "lines": 112,
+      "role": "script",
+      "exports": [],
+      "imports": [
+        "../src",
+        "../../../shared/event-log"
+      ],
+      "symbols": [
+        "parseOptions"
+      ]
+    },
+    "matt-clawd__knowledge-base-rag/src/scripts/stats.js": {
+      "lang": "javascript",
+      "lines": 38,
+      "role": "script",
+      "exports": [],
+      "imports": [
+        "../src",
+        "../../../shared/event-log"
+      ],
+      "symbols": []
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/__init__.py": {
+      "lang": "python",
+      "lines": 220,
+      "role": "module",
+      "exports": [
+        "Memory",
+        "SalienceVector",
+        "Event",
+        "Entity",
+        "Crystal",
+        "Relation",
+        "Contradiction",
+        "Activation",
+        "ProspectiveMemory",
+        "Schema",
+        "AntibodyMemory",
+        "SQLiteBackend",
+        "OllamaEmbedder",
+        "MemoryEngine"
+      ],
+      "imports": [
+        "__future__",
+        "os",
+        "typing",
+        "semantic_gravity_memory.models",
+        "semantic_gravity_memory.storage.sqlite_backend",
+        "semantic_gravity_memory.embeddings.ollama",
+        "semantic_gravity_memory.core.engine"
+      ],
+      "symbols": [
+        "Memory",
+        "SalienceVector",
+        "Event",
+        "Entity",
+        "Crystal",
+        "Relation",
+        "Contradiction",
+        "Activation",
+        "ProspectiveMemory",
+        "Schema",
+        "AntibodyMemory",
+        "SQLiteBackend",
+        "OllamaEmbedder",
+        "MemoryEngine",
+        "Memory"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/models.py": {
+      "lang": "python",
+      "lines": 282,
+      "role": "module",
+      "exports": [
+        "SalienceVector"
+      ],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "typing"
+      ],
+      "symbols": [
+        "SalienceVector",
+        "Event",
+        "Entity",
+        "Crystal",
+        "Relation",
+        "Contradiction",
+        "Activation",
+        "ProspectiveMemory",
+        "Schema",
+        "AntibodyMemory"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/utils.py": {
+      "lang": "python",
+      "lines": 187,
+      "role": "utility",
+      "exports": [
+        "now_iso"
+      ],
+      "imports": [
+        "__future__",
+        "datetime",
+        "json",
+        "math",
+        "re",
+        "typing"
+      ],
+      "symbols": [
+        "now_iso",
+        "parse_iso",
+        "seconds_between",
+        "hours_since",
+        "is_expired",
+        "cosine_similarity",
+        "exponential_decay",
+        "reinforcement_boost",
+        "sigmoid",
+        "clamp",
+        "weighted_average",
+        "slugify",
+        "summarize_text",
+        "word_tokens",
+        "content_tokens",
+        "safe_json_dumps",
+        "safe_json_loads"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/ui/brain.js": {
+      "lang": "javascript",
+      "lines": 1005,
+      "role": "module",
+      "exports": [],
+      "imports": [
+        "three/addons/controls/OrbitControls.js",
+        "three/addons/postprocessing/EffectComposer.js",
+        "three/addons/postprocessing/RenderPass.js",
+        "three/addons/postprocessing/UnrealBloomPass.js",
+        "three/addons/postprocessing/OutputPass.js"
+      ],
+      "symbols": [
+        "SELF_STATE_COLORS",
+        "RELATION_COLORS",
+        "API",
+        "scene",
+        "graphGroup",
+        "clock",
+        "nodes",
+        "edges",
+        "nodeMap",
+        "activeNodeIds",
+        "raycaster",
+        "mouse",
+        "hoveredNode",
+        "selectedNode",
+        "activationWaves",
+        "isLayoutSettled",
+        "layoutIterations",
+        "MAX_LAYOUT_ITERS",
+        "IDLE_DRIFT_SPEED",
+        "webglAvailable",
+        "init",
+        "init3D",
+        "createStarfield",
+        "buildGraph",
+        "clearGraph",
+        "stepLayout",
+        "applyIdleDrift",
+        "highlightScene",
+        "resetHighlight",
+        "updateActivationWaves",
+        "pulseActiveNodes",
+        "onMouseMove",
+        "onClick",
+        "animate",
+        "setupUI",
+        "switchTab",
+        "populateSelect",
+        "guessDefault",
+        "appendChat",
+        "setStatus",
+        "esc",
+        "randomSpherePoint",
+        "onResize"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/storage/__init__.py": {
+      "lang": "python",
+      "lines": 5,
+      "role": "module",
+      "exports": [
+        "BaseStorage",
+        "SQLiteBackend"
+      ],
+      "imports": [
+        "semantic_gravity_memory.storage.base",
+        "semantic_gravity_memory.storage.sqlite_backend"
+      ],
+      "symbols": [
+        "BaseStorage",
+        "SQLiteBackend"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/storage/base.py": {
+      "lang": "python",
+      "lines": 225,
+      "role": "module",
+      "exports": [
+        "BaseStorage"
+      ],
+      "imports": [
+        "__future__",
+        "abc",
+        "typing",
+        "semantic_gravity_memory.models"
+      ],
+      "symbols": [
+        "BaseStorage"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/storage/sqlite_backend.py": {
+      "lang": "python",
+      "lines": 846,
+      "role": "module",
+      "exports": [
+        "SQLiteBackend"
+      ],
+      "imports": [
+        "__future__",
+        "json",
+        "sqlite3",
+        "threading",
+        "typing",
+        "semantic_gravity_memory.models",
+        "semantic_gravity_memory.storage.base",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "SQLiteBackend"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/gui/__init__.py": {
+      "lang": "python",
+      "lines": 2,
+      "role": "module",
+      "exports": [],
+      "imports": [],
+      "symbols": []
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/gui/app.py": {
+      "lang": "python",
+      "lines": 677,
+      "role": "module",
+      "exports": [
+        "force_directed_layout"
+      ],
+      "imports": [
+        "__future__",
+        "json",
+        "math",
+        "os",
+        "queue",
+        "random",
+        "shutil",
+        "subprocess",
+        "threading",
+        "time",
+        "urllib.error",
+        "urllib.request",
+        "typing",
+        "semantic_gravity_memory",
+        "semantic_gravity_memory.embeddings.ollama",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "force_directed_layout",
+        "ollama_chat",
+        "MemoryLabApp",
+        "main"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/embeddings/__init__.py": {
+      "lang": "python",
+      "lines": 5,
+      "role": "module",
+      "exports": [
+        "BaseEmbedder",
+        "OllamaEmbedder"
+      ],
+      "imports": [
+        "semantic_gravity_memory.embeddings.base",
+        "semantic_gravity_memory.embeddings.ollama"
+      ],
+      "symbols": [
+        "BaseEmbedder",
+        "OllamaEmbedder"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/embeddings/base.py": {
+      "lang": "python",
+      "lines": 27,
+      "role": "module",
+      "exports": [
+        "BaseEmbedder"
+      ],
+      "imports": [
+        "__future__",
+        "abc",
+        "typing"
+      ],
+      "symbols": [
+        "BaseEmbedder"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/embeddings/ollama.py": {
+      "lang": "python",
+      "lines": 79,
+      "role": "module",
+      "exports": [
+        "OllamaEmbedder"
+      ],
+      "imports": [
+        "__future__",
+        "json",
+        "urllib.error",
+        "urllib.request",
+        "typing",
+        "semantic_gravity_memory.embeddings.base"
+      ],
+      "symbols": [
+        "OllamaEmbedder"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/__init__.py": {
+      "lang": "python",
+      "lines": 85,
+      "role": "module",
+      "exports": [
+        "extract_entities",
+        "extract_relationships",
+        "find_co_occurrences",
+        "score_salience",
+        "SelfStateDetector",
+        "ContradictionDetector",
+        "CrystalForge",
+        "crystal_strength",
+        "reinforce_crystal",
+        "cluster_crystals",
+        "create_episode_relations",
+        "get_episode_members",
+        "temporal_gravity",
+        "temporal_proximity_bonus",
+        "recency_score",
+        "create_prospective",
+        "check_prospective_triggers",
+        "fire_prospective",
+        "fire_all_triggered",
+        "version_crystal",
+        "get_crystal_history",
+        "belief_at_version",
+        "decay_all_crystals",
+        "auto_cluster",
+        "RetrievalEngine",
+        "WorkingMemoryBuffer",
+        "spread_activation",
+        "MetaMemory",
+        "create_antibody",
+        "check_antibodies",
+        "deactivate_antibody",
+        "Consolidator",
+        "ConsolidationDaemon",
+        "MemoryEngine"
+      ],
+      "imports": [
+        "semantic_gravity_memory.core.entity_extractor",
+        "semantic_gravity_memory.core.salience",
+        "semantic_gravity_memory.core.self_state",
+        "semantic_gravity_memory.core.contradiction",
+        "semantic_gravity_memory.core.crystal_forge",
+        "semantic_gravity_memory.core.temporal",
+        "semantic_gravity_memory.core.retrieval",
+        "semantic_gravity_memory.core.metamemory",
+        "semantic_gravity_memory.core.immune",
+        "semantic_gravity_memory.core.consolidation",
+        "semantic_gravity_memory.core.engine"
+      ],
+      "symbols": [
+        "extract_entities",
+        "extract_relationships",
+        "find_co_occurrences",
+        "score_salience",
+        "SelfStateDetector",
+        "ContradictionDetector",
+        "CrystalForge",
+        "crystal_strength",
+        "reinforce_crystal",
+        "cluster_crystals",
+        "create_episode_relations",
+        "get_episode_members",
+        "temporal_gravity",
+        "temporal_proximity_bonus",
+        "recency_score",
+        "create_prospective",
+        "check_prospective_triggers",
+        "fire_prospective",
+        "fire_all_triggered",
+        "version_crystal",
+        "get_crystal_history",
+        "belief_at_version",
+        "decay_all_crystals",
+        "auto_cluster",
+        "RetrievalEngine",
+        "WorkingMemoryBuffer",
+        "spread_activation",
+        "MetaMemory",
+        "create_antibody",
+        "check_antibodies",
+        "deactivate_antibody",
+        "Consolidator",
+        "ConsolidationDaemon",
+        "MemoryEngine"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/consolidation.py": {
+      "lang": "python",
+      "lines": 459,
+      "role": "module",
+      "exports": [
+        "Consolidator"
+      ],
+      "imports": [
+        "__future__",
+        "threading",
+        "time",
+        "typing",
+        "semantic_gravity_memory.models",
+        "semantic_gravity_memory.storage.base",
+        "semantic_gravity_memory.core.temporal",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "_average_salience",
+        "_average_embeddings",
+        "Consolidator",
+        "ConsolidationDaemon"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/contradiction.py": {
+      "lang": "python",
+      "lines": 286,
+      "role": "module",
+      "exports": [
+        "ContradictionDetector"
+      ],
+      "imports": [
+        "__future__",
+        "re",
+        "typing",
+        "semantic_gravity_memory.models",
+        "semantic_gravity_memory.storage.base",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "_extract_preferences",
+        "_extract_factual_claims",
+        "_is_growth",
+        "_subjects_overlap",
+        "ContradictionDetector"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/crystal_forge.py": {
+      "lang": "python",
+      "lines": 268,
+      "role": "module",
+      "exports": [
+        "CrystalForge"
+      ],
+      "imports": [
+        "__future__",
+        "typing",
+        "semantic_gravity_memory.models",
+        "semantic_gravity_memory.storage.base",
+        "semantic_gravity_memory.embeddings.base",
+        "semantic_gravity_memory.core.entity_extractor",
+        "semantic_gravity_memory.core.salience",
+        "semantic_gravity_memory.core.self_state",
+        "semantic_gravity_memory.core.contradiction",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "CrystalForge"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/engine.py": {
+      "lang": "python",
+      "lines": 276,
+      "role": "module",
+      "exports": [
+        "MemoryEngine"
+      ],
+      "imports": [
+        "__future__",
+        "json",
+        "typing",
+        "semantic_gravity_memory.storage.base",
+        "semantic_gravity_memory.embeddings.base",
+        "semantic_gravity_memory.core.crystal_forge",
+        "semantic_gravity_memory.core.retrieval",
+        "semantic_gravity_memory.core.consolidation",
+        "semantic_gravity_memory.core.metamemory",
+        "semantic_gravity_memory.core.temporal",
+        "semantic_gravity_memory.core.immune",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "MemoryEngine"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/entity_extractor.py": {
+      "lang": "python",
+      "lines": 278,
+      "role": "module",
+      "exports": [
+        "extract_entities"
+      ],
+      "imports": [
+        "__future__",
+        "re",
+        "typing",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "_normalize_entity_name",
+        "_classify_entity",
+        "_extract_capitalized_phrases",
+        "_extract_camel_case",
+        "_extract_tech_names",
+        "_extract_quoted_strings",
+        "_extract_frequent_content",
+        "_deduplicate_and_merge",
+        "extract_entities",
+        "extract_relationships",
+        "find_co_occurrences"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/immune.py": {
+      "lang": "python",
+      "lines": 125,
+      "role": "module",
+      "exports": [
+        "create_antibody"
+      ],
+      "imports": [
+        "__future__",
+        "typing",
+        "semantic_gravity_memory.models",
+        "semantic_gravity_memory.storage.base",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "create_antibody",
+        "deactivate_antibody",
+        "check_antibodies"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/metamemory.py": {
+      "lang": "python",
+      "lines": 123,
+      "role": "module",
+      "exports": [
+        "MetaMemory"
+      ],
+      "imports": [
+        "__future__",
+        "typing",
+        "semantic_gravity_memory.storage.base",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "MetaMemory"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/retrieval.py": {
+      "lang": "python",
+      "lines": 582,
+      "role": "module",
+      "exports": [
+        "spread_activation"
+      ],
+      "imports": [
+        "__future__",
+        "typing",
+        "semantic_gravity_memory.models",
+        "semantic_gravity_memory.storage.base",
+        "semantic_gravity_memory.embeddings.base",
+        "semantic_gravity_memory.core.self_state",
+        "semantic_gravity_memory.core.temporal",
+        "semantic_gravity_memory.core.immune",
+        "semantic_gravity_memory.core.metamemory",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "spread_activation",
+        "WorkingMemoryBuffer",
+        "ResonanceField",
+        "match_entity_cues",
+        "RetrievalEngine"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/salience.py": {
+      "lang": "python",
+      "lines": 177,
+      "role": "module",
+      "exports": [
+        "score_salience"
+      ],
+      "imports": [
+        "__future__",
+        "re",
+        "typing",
+        "semantic_gravity_memory.models",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "_count_phrase_matches",
+        "_phrase_score",
+        "score_salience"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/self_state.py": {
+      "lang": "python",
+      "lines": 203,
+      "role": "module",
+      "exports": [
+        "SelfStateDetector"
+      ],
+      "imports": [
+        "__future__",
+        "re",
+        "typing",
+        "semantic_gravity_memory.storage.base",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "SelfStateDetector"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/core/temporal.py": {
+      "lang": "python",
+      "lines": 518,
+      "role": "module",
+      "exports": [
+        "crystal_strength"
+      ],
+      "imports": [
+        "__future__",
+        "typing",
+        "semantic_gravity_memory.models",
+        "semantic_gravity_memory.storage.base",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "crystal_strength",
+        "reinforce_crystal",
+        "cluster_crystals",
+        "create_episode_relations",
+        "get_episode_members",
+        "temporal_gravity",
+        "temporal_proximity_bonus",
+        "recency_score",
+        "create_prospective",
+        "check_prospective_triggers",
+        "fire_prospective",
+        "fire_all_triggered",
+        "version_crystal",
+        "get_crystal_history",
+        "belief_at_version",
+        "gravitational_mass",
+        "decay_all_crystals",
+        "auto_cluster"
+      ]
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/api/__init__.py": {
+      "lang": "python",
+      "lines": 2,
+      "role": "route",
+      "exports": [],
+      "imports": [],
+      "symbols": []
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/api/__main__.py": {
+      "lang": "python",
+      "lines": 5,
+      "role": "route",
+      "exports": [],
+      "imports": [
+        "semantic_gravity_memory.api.server"
+      ],
+      "symbols": []
+    },
+    "lalomorales__second-brain/src/semantic_gravity_memory/api/server.py": {
+      "lang": "python",
+      "lines": 670,
+      "role": "route",
+      "exports": [
+        "ollama_chat"
+      ],
+      "imports": [
+        "__future__",
+        "json",
+        "mimetypes",
+        "os",
+        "sys",
+        "threading",
+        "traceback",
+        "urllib.error",
+        "urllib.request",
+        "http.server",
+        "typing",
+        "urllib.parse",
+        "semantic_gravity_memory",
+        "semantic_gravity_memory.utils"
+      ],
+      "symbols": [
+        "ollama_chat",
+        "ollama_chat_stream",
+        "ollama_models",
+        "_crystal_to_dict",
+        "_entity_to_dict",
+        "_relation_to_dict",
+        "_contradiction_to_dict",
+        "BrainHandler",
+        "ThreadedHTTPServer",
+        "_detect_models",
+        "run",
+        "main"
+      ]
+    },
+    "citadel__codebase-map/map-index.js": {
+      "lang": "javascript",
+      "lines": 635,
+      "role": "module",
+      "exports": [
+        "SomeName",
+        "..."
+      ],
+      "imports": [
+        " ... ",
+        "fs",
+        "path",
+        "..."
+      ],
+      "symbols": [
+        "fs",
+        "path",
+        "ALWAYS_SKIP_DIRS",
+        "BINARY_EXTENSIONS",
+        "LANG_MAP",
+        "RESOLVABLE_EXTS",
+        "CACHE_MAX_AGE_MS",
+        "parseArgs",
+        "globToRegex",
+        "loadGitignore",
+        "walkFiles",
+        "extractTS",
+        "extractPython",
+        "extractGo",
+        "extractRust",
+        "extractFile",
+        "inferRole",
+        "resolveImportPath",
+        "buildGraph",
+        "generateIndex",
+        "queryIndex",
+        "showStats",
+        "main"
+      ]
+    }
+  },
+  "graph": {
+    "matt-clawd__knowledge-base-rag/src/src/db.js": [
+      "matt-clawd__knowledge-base-rag/src/src/config.js"
+    ],
+    "matt-clawd__knowledge-base-rag/src/src/extractor.js": [
+      "matt-clawd__knowledge-base-rag/src/src/config.js",
+      "matt-clawd__knowledge-base-rag/src/src/browser.js"
+    ],
+    "matt-clawd__knowledge-base-rag/src/src/index.js": [
+      "matt-clawd__knowledge-base-rag/src/src/db.js",
+      "matt-clawd__knowledge-base-rag/src/src/embeddings.js",
+      "matt-clawd__knowledge-base-rag/src/src/search.js",
+      "matt-clawd__knowledge-base-rag/src/src/chunker.js",
+      "matt-clawd__knowledge-base-rag/src/src/extractor.js",
+      "matt-clawd__knowledge-base-rag/src/src/entity-extractor.js",
+      "matt-clawd__knowledge-base-rag/src/src/config.js",
+      "matt-clawd__knowledge-base-rag/src/src/db.js"
+    ],
+    "matt-clawd__knowledge-base-rag/src/src/ingest-request-state.js": [
+      "matt-clawd__knowledge-base-rag/src/src/config.js"
+    ],
+    "matt-clawd__knowledge-base-rag/src/src/search.js": [
+      "matt-clawd__knowledge-base-rag/src/src/citation-formatter.js",
+      "matt-clawd__knowledge-base-rag/src/src/db.js"
+    ],
+    "matt-clawd__knowledge-base-rag/src/scripts/backfill-tweet-links.js": [
+      "matt-clawd__knowledge-base-rag/src/src/index.js",
+      "matt-clawd__knowledge-base-rag/src/src/extractor.js",
+      "matt-clawd__knowledge-base-rag/src/scripts/ingest.js",
+      "matt-clawd__knowledge-base-rag/src/src/config.js"
+    ],
+    "matt-clawd__knowledge-base-rag/src/scripts/delete.js": [
+      "matt-clawd__knowledge-base-rag/src/src/index.js"
+    ],
+    "matt-clawd__knowledge-base-rag/src/scripts/ingest-and-crosspost.js": [
+      "matt-clawd__knowledge-base-rag/src/src/index.js",
+      "matt-clawd__knowledge-base-rag/src/src/extractor.js",
+      "matt-clawd__knowledge-base-rag/src/scripts/ingest.js",
+      "matt-clawd__knowledge-base-rag/src/src/ingest-request-state.js",
+      "matt-clawd__knowledge-base-rag/src/src/config.js"
+    ],
+    "matt-clawd__knowledge-base-rag/src/scripts/ingest.js": [
+      "matt-clawd__knowledge-base-rag/src/src/index.js",
+      "matt-clawd__knowledge-base-rag/src/src/extractor.js",
+      "matt-clawd__knowledge-base-rag/src/src/entity-extractor.js",
+      "matt-clawd__knowledge-base-rag/src/src/config.js"
+    ],
+    "matt-clawd__knowledge-base-rag/src/scripts/list.js": [
+      "matt-clawd__knowledge-base-rag/src/src/index.js"
+    ],
+    "matt-clawd__knowledge-base-rag/src/scripts/query.js": [
+      "matt-clawd__knowledge-base-rag/src/src/index.js"
+    ],
+    "matt-clawd__knowledge-base-rag/src/scripts/stats.js": [
+      "matt-clawd__knowledge-base-rag/src/src/index.js"
+    ]
+  }
+}

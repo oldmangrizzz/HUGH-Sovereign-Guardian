@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
+import { Doc, Id } from "../convex/_generated/dataModel";
 
 export default function VaultPanel() {
   const files = useQuery(api.vault.listFiles);
@@ -111,7 +111,7 @@ export default function VaultPanel() {
       {/* File list */}
       {files && files.length > 0 ? (
         <div className="space-y-2">
-          {files.map((file) => (
+          {files.map((file: Doc<"vaultFiles"> & { url: string | null }) => (
             <div
               key={file._id}
               className="panel relative overflow-hidden"

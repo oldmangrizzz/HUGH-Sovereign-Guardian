@@ -1,0 +1,12 @@
+{
+  "name": "loom-knowledge-graph",
+  "version": "1.0.0",
+  "description": "LOOM — Grizzly Medicine Lab knowledge graph. Convex cloud backend.",
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy"
+  },
+  "dependencies": {
+    "convex": "^1.32.0"
+  }
+}

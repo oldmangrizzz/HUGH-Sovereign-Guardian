@@ -17,7 +17,7 @@ export default function ExportPanel() {
     setExporting(true);
     setResult(null);
     try {
-      const r = await exportToGitHub({ repoName: repoName.trim(), orgOrUser: orgOrUser.trim(), isPrivate });
+      const r = await exportToGitHub({ repoName: repoName.trim(), orgOrUser: orgOrUser.trim(), isPrivate, filesJson: "[]" });
       setResult(r);
       toast.success(`Pushed ${r.filesUploaded} files → ${r.repoUrl}`);
     } catch (err) {

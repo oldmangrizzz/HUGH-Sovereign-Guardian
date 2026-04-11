@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>N.A.T — PTT</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #080808;
+      color: #e0e0e0;
+      font-family: 'SF Mono', 'Courier New', monospace;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #callsign {
+      font-size: 0.6rem;
+      letter-spacing: 0.3em;
+      color: #333;
+      text-transform: uppercase;
+      margin-bottom: 3rem;
+    }
+    #status {
+      font-size: 0.65rem;
+      color: #555;
+      margin-bottom: 2.5rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+      min-height: 1rem;
+    }
+    #status.connected  { color: #22c55e; }
+    #status.error      { color: #ef4444; }
+    #status.active     { color: #60a5fa; }
+    #status.processing { color: #f59e0b; }
+    #ptt-btn {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 1.5px solid #222;
+      background: #111;
+      color: #666;
+      font-family: 'SF Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s, box-shadow 0.1s, color 0.1s;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+    }
+    #ptt-btn.active {
+      background: #1a0505;
+      border-color: #dc2626;
+      color: #fca5a5;
+      box-shadow: 0 0 60px rgba(220,38,38,0.3);
+    }
+    #ptt-btn:disabled {
+      opacity: 0.25;
+      cursor: default;
+    }
+    #hint {
+      margin-top: 2.5rem;
+      font-size: 0.6rem;
+      color: #2a2a2a;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div id="callsign">N · A · T — Black Widow</div>
+  <div id="status">connecting...</div>
+  <button id="ptt-btn" disabled>hold to talk</button>
+  <div id="hint">tap and hold · release to send</div>
+
+  <script src="https://unpkg.com/livekit-client@2.5.4/dist/livekit-client.umd.min.js"></script>
+  <script>
+    const statusEl = document.getElementById('status');
+    const btn = document.getElementById('ptt-btn');
+
+    let room = null;
+    let transmitting = false;
+
+    function setStatus(text, cls) {
+      statusEl.textContent = text;
+      statusEl.className = cls || '';
+    }
+
+    async function init() {
+      try {
+        const res = await fetch('/voice_token');
+        if (!res.ok) throw new Error('token ' + res.status);
+        const { token, url } = await res.json();
+
+        room = new LivekitClient.Room({
+          adaptiveStream: true,
+          dynacast: true,
+          audioCaptureDefaults: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+
+        room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
+          if (track.kind === LivekitClient.Track.Kind.Audio) {
+            const el = track.attach();
+            el.autoplay = true;
+            document.body.appendChild(el);
+            setStatus('incoming...', 'active');
+            el.addEventListener('ended', () => {
+              if (!transmitting) setStatus('ready', 'connected');
+            });
+          }
+        });
+
+        room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track) => {
+          track.detach();
+        });
+
+        room.on(LivekitClient.RoomEvent.Disconnected, () => {
+          setStatus('disconnected', 'error');
+          btn.disabled = true;
+        });
+
+        await room.connect(url, token);
+        setStatus('ready', 'connected');
+        btn.disabled = false;
+      } catch (e) {
+        setStatus('connection failed', 'error');
+        console.error(e);
+      }
+    }
+
+    async function startTalk() {
+      if (!room || transmitting) return;
+      transmitting = true;
+      btn.classList.add('active');
+      btn.textContent = '● transmitting';
+      setStatus('transmitting', 'active');
+      try {
+        await room.localParticipant.setMicrophoneEnabled(true);
+      } catch (e) {
+        setStatus('mic blocked', 'error');
+        stopTalk();
+      }
+    }
+
+    async function stopTalk() {
+      if (!room || !transmitting) return;
+      transmitting = false;
+      btn.classList.remove('active');
+      btn.textContent = 'hold to talk';
+      setStatus('processing...', 'processing');
+      await room.localParticipant.setMicrophoneEnabled(false);
+      setTimeout(() => { if (!transmitting) setStatus('ready', 'connected'); }, 4000);
+    }
+
+    // Touch (Watch / iPhone / iPad)
+    btn.addEventListener('touchstart',  e => { e.preventDefault(); startTalk(); }, { passive: false });
+    btn.addEventListener('touchend',    e => { e.preventDefault(); stopTalk();  }, { passive: false });
+    btn.addEventListener('touchcancel', e => { e.preventDefault(); stopTalk();  }, { passive: false });
+
+    // Mouse (Mac browser)
+    btn.addEventListener('mousedown',  () => startTalk());
+    btn.addEventListener('mouseup',    () => stopTalk());
+    btn.addEventListener('mouseleave', () => { if (transmitting) stopTalk(); });
+
+    init();
+  </script>
+</body>
+</html>

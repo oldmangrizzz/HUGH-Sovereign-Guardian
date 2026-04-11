@@ -1,0 +1,74 @@
+# LOOM Configuration
+# Copy to config/config.local.yaml and fill in secrets — never commit the local copy
+
+loom:
+  data_root: /var/loom
+  sources_dir: /var/loom/sources
+  graph_dir: /var/loom/graph
+  vectors_dir: /var/loom/vectors
+  logs_dir: /var/loom/logs
+
+sources:
+  github:
+    enabled: true
+    local_path: /var/loom/sources/github
+    repos: []  # populated by rclone_sync.sh
+  gdrive_personal:
+    enabled: true
+    rclone_remote: gdrive-personal
+    local_path: /var/loom/sources/gdrive-personal
+  gdrive_business:
+    enabled: true
+    rclone_remote: gdrive-business
+    local_path: /var/loom/sources/gdrive-business
+  icloud:
+    enabled: true
+    rclone_remote: icloud
+    local_path: /var/loom/sources/icloud
+  openai_export:
+    enabled: false  # flip to true when export lands
+    local_path: /var/loom/sources/openai
+    format: conversations_json
+
+ingest:
+  supported_extensions:
+    - .pdf
+    - .md
+    - .txt
+    - .docx
+    - .py
+    - .ts
+    - .js
+    - .ipynb
+    - .jpg
+    - .jpeg
+    - .png
+    - .csv
+    - .xlsx
+  chunk_size: 512         # tokens
+  chunk_overlap: 64       # tokens
+  batch_size: 32          # files per Daft partition
+  embedding_dim: 384      # all-MiniLM-L6-v2
+
+embedding:
+  endpoint: http://127.0.0.1:8083/v1/embeddings
+  model: all-MiniLM-L6-v2
+  batch_size: 64
+  timeout_seconds: 30
+
+api:
+  host: 0.0.0.0
+  port: 7777
+  rate_limit: "60/minute"
+  max_results: 100
+  # api_key: set via LOOM_API_KEY env var
+
+convex:
+  # url: set via CONVEX_URL env var
+  # secret: set via LOOM_CONVEX_SECRET env var
+  sync_collections:
+    - loom_documents
+    - loom_concepts
+    - loom_recent
+  recent_limit: 500
+  snapshot_format: parquet

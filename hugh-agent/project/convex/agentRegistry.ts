@@ -5,7 +5,7 @@
  * H.U.G.H. resolves target → agentUrl dynamically from this table.
  * Secrets are stored as SHA-256 hashes — never plaintext.
  */
-import { internalMutation, internalQuery, query, mutation } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 
 // ── INTERNAL: UPSERT NODE ─────────────────────────────────────────────────
@@ -110,7 +110,7 @@ export const getAllNodes = internalQuery({
 });
 
 // ── PUBLIC: LIST NODES (admin UI) ─────────────────────────────────────────
-export const listNodes = query({
+export const listNodes = internalQuery({
   args: {},
   handler: async (ctx) => {
     const nodes = await ctx.db.query("agentRegistry").collect();
@@ -120,7 +120,7 @@ export const listNodes = query({
 });
 
 // ── PUBLIC: MARK NODE OFFLINE (admin) ────────────────────────────────────
-export const deregisterNode = mutation({
+export const deregisterNode = internalMutation({
   args: { nodeId: v.string() },
   handler: async (ctx, args) => {
     const node = await ctx.db

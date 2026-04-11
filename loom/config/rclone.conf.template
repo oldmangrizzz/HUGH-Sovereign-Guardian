@@ -1,0 +1,33 @@
+# rclone config template for LOOM
+# Copy to /root/.config/rclone/rclone.conf on CT-115
+# Fill in OAuth tokens via: rclone config (interactive)
+
+[gdrive-personal]
+type = drive
+client_id =
+client_secret =
+scope = drive.readonly
+token =
+team_drive =
+
+[gdrive-business]
+type = drive
+client_id =
+client_secret =
+scope = drive.readonly
+token =
+team_drive =
+
+[icloud]
+type = iclouddrive
+apple_id =
+password =
+# NOTE: rclone iCloud support is experimental as of 2024
+# Alternative: mount iCloud on macOS, share via Samba to CT-115
+# then use a local rclone remote pointing at the Samba mount
+
+# [icloud-via-smb]
+# type = smb
+# host = 192.168.X.Y   # macbook IP
+# user = grizzmed
+# pass =

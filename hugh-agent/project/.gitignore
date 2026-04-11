@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# J-05 FIX: Explicit env secret protection
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -24,4 +29,4 @@ dist-ssr
 *.sw?
 
 # Ignored for the template, you probably want to remove it:
-package-lock.json
+package-lock.json.worktrees/

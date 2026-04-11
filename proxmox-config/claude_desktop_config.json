@@ -1,0 +1,20 @@
+{
+    "mcpServers": {
+        "ProxmoxMCP-Plus": {
+            "command": "python3",
+            "args": ["-m", "proxmox_mcp.server"],
+            "env": {
+                "PYTHONPATH": "/Users/grizzmed/ProxmoxMCP-Plus/src",
+                "PROXMOX_MCP_CONFIG": "/Users/grizzmed/ProxmoxMCP-Plus/proxmox-config/config.json",
+                "PROXMOX_HOST": "192.168.7.232",
+                "PROXMOX_USER": "root@pam",
+                "PROXMOX_TOKEN_NAME": "mcp-server",
+                "PROXMOX_TOKEN_VALUE": "895074af-ce7a-465e-8675-694ba584c938",
+                "PROXMOX_PORT": "8006",
+                "PROXMOX_VERIFY_SSL": "false",
+                "PROXMOX_SERVICE": "PVE",
+                "LOG_LEVEL": "INFO"
+            }
+        }
+    }
+}

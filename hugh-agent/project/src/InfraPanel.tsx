@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAction, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 
 type KvmEntry = {
@@ -97,8 +97,7 @@ export default function InfraPanel() {
   const getCommandLog = useAction(api.kvm.getCommandLog);
   const getVpsStatus = useAction(api.kvm.getVpsStatus);
   const pingAllAgents = useAction(api.kvm.pingAllAgents);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const deregisterNode = useAction(api.agentRegistry.deregisterNode as any);
+  const deregisterNode = useMutation(api.agentRegistry.deregisterNode);
   const listRooms = useAction(api.livekit.listRooms);
   const ensureRoom = useAction(api.livekit.ensureRoom);
   const deleteRoom = useAction(api.livekit.deleteRoom);

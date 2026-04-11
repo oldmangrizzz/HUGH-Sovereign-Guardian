@@ -1,0 +1,21 @@
+{
+  "accounts": {
+    "inbox@example.com": {
+      "enabled": true,
+      "lookbackDays": 7,
+      "maxThreads": 30,
+      "scoreThreshold": 75,
+      "labelWritesEnabled": true,
+      "stageTrackingEnabled": true,
+      "draftWritesEnabled": false,
+      "slackEscalationEnabled": true,
+      "archiveIgnoredEnabled": true,
+      "researchEnabled": true
+    }
+  },
+  "model": "claude-sonnet-4-6",
+  "replyDraftModel": "claude-sonnet-4-6",
+  "replyDraftReviewEnabled": true,
+  "dbPath": "./data/triage.db",
+  "dryRun": false
+}

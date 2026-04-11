@@ -1,0 +1,68 @@
+version: "3.8"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Grizzly MCP Server Fleet
+# Three MCP servers running in Docker for persistent access across sessions.
+#
+# Usage:
+#   docker compose -f docker-compose.mcp.yml build
+#   docker compose -f docker-compose.mcp.yml up -d
+#
+# Claude Desktop uses `docker run` with stdin/stdout for each server.
+# This compose file is for building images and optional always-on mode.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+  # ─── Proxmox VE Management ─────────────────────────────────────────────────
+  proxmox-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxmox
+    image: grizzly/proxmox-mcp:latest
+    container_name: proxmox-mcp
+    environment:
+      - PROXMOX_MCP_CONFIG=/app/proxmox-config/config.json
+      - PYTHONPATH=/app
+    volumes:
+      - ./proxmox-config:/app/proxmox-config:ro
+    stdin_open: true
+    restart: unless-stopped
+    networks:
+      - mcp-net
+
+  # ─── Hostinger VPS SSH Management ──────────────────────────────────────────
+  hostinger-ssh-mcp:
+    build:
+      context: ./hostinger-ssh-mcp
+      dockerfile: Dockerfile
+    image: grizzly/hostinger-ssh-mcp:latest
+    container_name: hostinger-ssh-mcp
+    environment:
+      - SSH_HOST=187.124.28.147
+      - SSH_PORT=22
+      - SSH_USER=root
+      - SSH_PASSWORD=Valhalla55730-
+      - LOG_LEVEL=INFO
+    stdin_open: true
+    restart: unless-stopped
+    networks:
+      - mcp-net
+
+  # ─── Convex.dev Backend Management ─────────────────────────────────────────
+  convex-mcp:
+    build:
+      context: ./convex-mcp
+      dockerfile: Dockerfile
+    image: grizzly/convex-mcp:latest
+    container_name: convex-mcp
+    volumes:
+      # Mount host Convex auth config so it persists
+      - ~/.config/convex:/root/.config/convex:ro
+    stdin_open: true
+    restart: unless-stopped
+    networks:
+      - mcp-net
+
+networks:
+  mcp-net:
+    driver: bridge

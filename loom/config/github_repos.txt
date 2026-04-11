@@ -1,0 +1,6 @@
+# github_repos.txt
+# One repo URL per line. Used by scripts/rclone_sync.sh to mirror repos to CT-115.
+# Lines starting with # are comments.
+
+# Add your repos here:
+# https://github.com/grizzmed/ProxmoxMCP-Plus.git

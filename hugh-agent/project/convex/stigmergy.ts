@@ -5,7 +5,8 @@ import { internal } from "./_generated/api";
 // ── DEPOSIT ────────────────────────────────────────────────────────────────
 // An agent deposits a pheromone into the shared substrate.
 // No agent ever calls another agent directly. This is the only coordination path.
-export const deposit = mutation({
+// N-10 FIX: Changed to internalMutation — prevents external pheromone poisoning
+export const deposit = internalMutation({
   args: {
     emitterId: v.string(),
     nodeId: v.string(),
@@ -58,7 +59,8 @@ export const observe = query({
 
 // ── EVAPORATE ─────────────────────────────────────────────────────────────
 // Soft-delete a specific pheromone. Called by the emitter or by the autophagy cycle.
-export const evaporate = mutation({
+// N-10 FIX: Changed to internalMutation — prevents external pheromone destruction
+export const evaporate = internalMutation({
   args: { pheromoneId: v.id("pheromones") },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.pheromoneId, { evaporated: true });
@@ -89,7 +91,8 @@ export const evaporateExpired = internalMutation({
 
 // ── UPDATE WEIGHT ─────────────────────────────────────────────────────────
 // Reinforce or weaken an existing pheromone signal.
-export const updateWeight = mutation({
+// N-10 FIX: Changed to internalMutation — prevents external weight manipulation
+export const updateWeight = internalMutation({
   args: {
     pheromoneId: v.id("pheromones"),
     weight: v.number(),

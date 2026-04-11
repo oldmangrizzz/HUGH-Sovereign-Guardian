@@ -60,7 +60,7 @@ def load_config(config_path: Optional[str] = None) -> Config:
                  - Field values are invalid
     """
     if not config_path:
-        raise ValueError("PROXMOX_MCP_CONFIG environment variable must be set")
+        raise ValueError("Config path must be provided")
 
     try:
         with open(config_path) as f:
